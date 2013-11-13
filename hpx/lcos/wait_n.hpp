@@ -130,24 +130,6 @@ namespace hpx
               , needed_count_(n)
             {}
 
-            when_n(BOOST_RV_REF(when_n) rhs)
-              : lazy_values_(boost::move(rhs.lazy_values_))
-              , needed_count_(rhs.needed_count_)
-            {
-                rhs.needed_count_ = 0;
-            }
-
-            when_n& operator=(BOOST_RV_REF(when_n) rhs)
-            {
-                if (this != &rhs) {
-                    lazy_values_ = boost::move(rhs.lazy_values_);
-
-                    needed_count_ = rhs.needed_count_;
-                    rhs.needed_count_ = 0;
-                }
-                return *this;
-            }
-
             result_type operator()()
             {
                 // set callback functions to executed when future is ready

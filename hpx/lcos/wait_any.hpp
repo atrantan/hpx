@@ -67,24 +67,6 @@ namespace hpx
               , index_(static_cast<std::size_t>(index_error))
             {}
 
-            when_any_swapped(BOOST_RV_REF(when_any_swapped) rhs)
-              : lazy_values_(boost::move(rhs.lazy_values_))
-              , index_(rhs.index_.load())
-            {
-                rhs.needed_count_ = 0;
-            }
-
-            when_any_swapped& operator=(BOOST_RV_REF(when_any_swapped) rhs)
-            {
-                if (this != &rhs) {
-                    lazy_values_ = boost::move(rhs.lazy_values_);
-
-                    index_ = rhs.index_;
-                    rhs.index_.store(static_cast<std::size_t>(index_error));
-                }
-                return *this;
-            }
-
             result_type operator()()
             {
                 using lcos::detail::get_future_data;
