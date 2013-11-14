@@ -53,6 +53,18 @@ namespace hpx { namespace components
                 : f(boost::move(other.f))
             {}
 
+            invoke_apply_fun & operator=(BOOST_COPY_ASSIGN_REF(invoke_apply_fun) other)
+            {
+                f = other.f;
+                return *this;
+            }
+
+            invoke_apply_fun & operator=(BOOST_RV_REF(invoke_apply_fun) other)
+            {
+                f = boost::move(other.f);
+                return *this;
+            }
+
             result_type operator()(void ** p) const
             {
                 return f(*reinterpret_cast<T *>(*p));
