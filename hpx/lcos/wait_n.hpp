@@ -102,8 +102,6 @@ namespace hpx
         struct when_n : boost::enable_shared_from_this<when_n<Sequence> >
         {
         private:
-            BOOST_MOVABLE_BUT_NOT_COPYABLE(when_n)
-
             void on_future_ready(threads::thread_id_type const& id)
             {
                 if (count_.fetch_add(1) + 1 == needed_count_)

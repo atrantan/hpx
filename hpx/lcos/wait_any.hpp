@@ -37,8 +37,6 @@ namespace hpx
         struct when_any_swapped : boost::enable_shared_from_this<when_any_swapped<T> >
         {
         private:
-            BOOST_MOVABLE_BUT_NOT_COPYABLE(when_any_swapped)
-
             enum { index_error = -1 };
 
             void on_future_ready(std::size_t idx, threads::thread_id_type const& id)
