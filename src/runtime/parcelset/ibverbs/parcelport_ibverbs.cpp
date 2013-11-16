@@ -373,10 +373,25 @@ namespace hpx { namespace parcelset { namespace ibverbs
         std::vector<parcel> const & parcels,
         std::vector<write_handler_type> const & handlers)
     {
-        // store parcels in connection
-        // The parcel gets serialized inside set_parcel, no
-        // need to keep the original parcel alive after this call returned.
-        client_connection->set_parcel(parcels);
+        try {
+            // store parcels in connection
+            // The parcel gets serialized inside set_parcel, no
+            // need to keep the original parcel alive after this call returned.
+            client_connection->set_parcel(parcels);
+        }
+        catch (naming::exhausted_credit const& e) {
+            // one of the id_types to be serialized ran out of credits
+
+            // Create a new HPX thread which replenishes the credit for the
+            // offending id and retries sending the parcels.
+            hpx::applier::register_thread_nullary(
+                HPX_STD_BIND(&parcelset::parcelport::replenish_credit_and_send_parcels,
+                    this->shared_from_this(), e.id_, boost::move(parcels),
+                    boost::move(handlers)),
+                "replenish_credit_and_send_parcels",
+                threads::pending, true, threads::thread_priority_critical);
+            return;
+        }
 
         // ... start an asynchronous write operation now.
         client_connection->async_write(

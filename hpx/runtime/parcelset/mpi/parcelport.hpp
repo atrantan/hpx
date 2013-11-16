@@ -118,8 +118,8 @@ namespace hpx { namespace parcelset { namespace mpi
 
         /// Return the name of this locality 
         std::string get_locality_name() const;
-        
-    private:
+
+    public:
         /// support enable_shared_from_this
         boost::shared_ptr<parcelport> shared_from_this()
         {
@@ -145,6 +145,12 @@ namespace hpx { namespace parcelset { namespace mpi
         std::size_t next_tag_;
         std::deque<int> free_tags_;
 
+    public:
+        void relinquish_tag(int tag)
+        {
+            free_tags_.push_back(tag);
+        }
+
         bool get_next_tag(int& tag)
         {
             tag = 0;
@@ -162,6 +168,7 @@ namespace hpx { namespace parcelset { namespace mpi
             return true;
         }
 
+    private:
         MPI_Comm communicator_;
         // handle messages
         acceptor acceptor_;

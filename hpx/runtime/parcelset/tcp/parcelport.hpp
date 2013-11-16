@@ -160,7 +160,7 @@ namespace hpx { namespace parcelset { namespace tcp
             naming::locality const& prefix,
             parcelport_connection_ptr client_connection);
         void send_pending_parcels(parcelport_connection_ptr client_connection,
-            std::vector<parcel> const&, std::vector<write_handler_type> const&);
+            std::vector<parcel>&, std::vector<write_handler_type>&);
 
         /// \brief Retrieve a new connection
         parcelport_connection_ptr get_connection(naming::locality const& l,
@@ -176,6 +176,13 @@ namespace hpx { namespace parcelset { namespace tcp
         void retry_sending_parcels(naming::locality const& locality_id);
         void get_connection_and_send_parcels(naming::locality const& locality_id, 
             naming::gid_type const& parcel_id);
+
+        bool send_parcels(hpx::future<bool>& f,
+            naming::id_type& id, std::vector<parcel> const& parcels,
+            std::vector<write_handler_type> const& handlers);
+        void replenish_credit_and_send_parcels(
+            naming::id_type& id, std::vector<parcel> const& parcels,
+            std::vector<write_handler_type> const& handlers);
 
     private:
         /// The pool of io_service objects used to perform asynchronous operations.

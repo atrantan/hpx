@@ -13,10 +13,12 @@
 #include <hpx/runtime/threads/thread_helpers.hpp>
 #include <hpx/runtime/parcelset/tcp/parcelport.hpp>
 #include <hpx/runtime/parcelset/detail/call_for_each.hpp>
+#include <hpx/runtime/agas/interface.hpp>
 #include <hpx/util/runtime_configuration.hpp>
 #include <hpx/util/io_service_pool.hpp>
 #include <hpx/util/stringstream.hpp>
 #include <hpx/util/logging.hpp>
+#include <hpx/lcos/future.hpp>
 
 #if defined(HPX_HAVE_SECURITY)
 #include <hpx/components/security/hash.hpp>
@@ -419,8 +421,7 @@ namespace hpx { namespace parcelset { namespace tcp
 
     void parcelport::send_pending_parcels(
         parcelport_connection_ptr client_connection,
-        std::vector<parcel> const & parcels,
-        std::vector<write_handler_type> const & handlers)
+        std::vector<parcel>& parcels, std::vector<write_handler_type>& handlers)
     {
 #if defined(HPX_TRACK_STATE_OF_OUTGOING_TCP_CONNECTION)
         client_connection->set_state(parcelport_connection::state_send_pending);
@@ -439,10 +440,25 @@ namespace hpx { namespace parcelset { namespace tcp
                 s.remote_endpoint().port());
         }
 #endif
-        // store parcels in connection
-        // The parcel gets serialized inside set_parcel, no
-        // need to keep the original parcel alive after this call returned.
-        client_connection->set_parcel(parcels);
+        try {
+            // store parcels in connection
+            // The parcel gets serialized inside set_parcel, no
+            // need to keep the original parcel alive after this call returned.
+            client_connection->set_parcel(parcels);
+        }
+        catch (naming::exhausted_credit const& e) {
+            // one of the id_types to be serialized ran out of credits
+
+            // Create a new HPX thread which replenishes the credit for the
+            // offending id and retries sending the parcels.
+            hpx::applier::register_thread_nullary(
+                HPX_STD_BIND(&parcelset::parcelport::replenish_credit_and_send_parcels,
+                    this->shared_from_this(), e.id_, boost::move(parcels),
+                    boost::move(handlers)),
+                "replenish_credit_and_send_parcels",
+                threads::pending, true, threads::thread_priority_critical);
+            return;
+        }
 
         // ... start an asynchronous write operation now.
         client_connection->async_write(

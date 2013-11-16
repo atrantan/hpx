@@ -1614,19 +1614,10 @@ void addressing_service::incref_apply(
 } // }}}
 
 ///////////////////////////////////////////////////////////////////////////////
-static bool synchronize_with_async_incref(
-    hpx::future<bool>& f, naming::id_type const& keep_alive)
-{
-    // do nothing, this is just to be able to keep alive the given id long enough
-    // we just rethrow any exception stored of f
-    return f.get();
-}
-
 lcos::future<bool> addressing_service::incref_async(
     naming::gid_type const& lower
   , naming::gid_type const& upper
   , boost::int64_t credit
-  , naming::id_type const& keep_alive
     )
 { // {{{ incref implementation
     if (HPX_UNLIKELY(0 >= credit))
@@ -1642,12 +1633,7 @@ lcos::future<bool> addressing_service::incref_async(
         stubs::primary_namespace::get_service_instance(lower)
       , naming::id_type::unmanaged);
 
-    lcos::future<bool> f = stubs::primary_namespace::service_async<bool>(target, req);
-    if (!keep_alive)
-        return f;
-
-    using HPX_STD_PLACEHOLDERS::_1;
-    return f.then(HPX_STD_BIND(synchronize_with_async_incref, _1, keep_alive));
+    return stubs::primary_namespace::service_async<bool>(target, req);
 } // }}}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1805,7 +1791,7 @@ lcos::future<bool> addressing_service::register_name_async(
     // FIXME: combine incref with register_name, if needed
     if (naming::detail::get_credit_from_gid(mutable_gid) != 0)
     {
-        new_gid = naming::detail::split_credits_for_gid(mutable_gid);
+        new_gid = naming::detail::split_credits_for_gid(mutable_gid, naming::divides_credit(2));
 
         // Credit exhaustion - we need to get more.
         if (0 == naming::detail::get_credit_from_gid(new_gid))

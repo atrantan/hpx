@@ -359,6 +359,14 @@ namespace hpx { namespace parcelset
             return allow_zero_copy_optimizations_;
         }
 
+        // support replenishing credit of ids and resending parcels
+        bool send_parcels(hpx::future<bool>& f,
+            naming::id_type& id, std::vector<parcel> const& parcels,
+            std::vector<write_handler_type> const& handlers);
+        void replenish_credit_and_send_parcels(
+            naming::id_type& id, std::vector<parcel> const& parcels,
+            std::vector<write_handler_type> const& handlers);
+
     protected:
         void report_potential_connection_error(naming::locality const& locality_id,
             naming::gid_type const& parcel_id, error_code const& ec);

@@ -237,8 +237,8 @@ namespace hpx { namespace parcelset { namespace mpi { namespace detail
 
         template <typename Parcelport>
         std::list<boost::shared_ptr<sender> > get_senders(
-            HPX_STD_FUNCTION<bool(int&)> const& tag_generator, MPI_Comm communicator,
-            Parcelport& pp, std::size_t & num_requests, std::size_t max_requests)
+            MPI_Comm communicator, Parcelport& pp, std::size_t & num_requests,
+            std::size_t max_requests)
         {
             std::list<boost::shared_ptr<sender> > res;
             parcel_holders phs;
@@ -250,21 +250,23 @@ namespace hpx { namespace parcelset { namespace mpi { namespace detail
                 }
                 std::swap(parcel_holders_, phs);
             }
+
             bool early_exit = false;
             BOOST_FOREACH(parcel_holders::value_type & ph, phs)
             {
-                if(ph.second.size() == 0) continue;
-                if(num_requests >= max_requests)
+                if (ph.second.size() == 0) continue;
+                if (num_requests >= max_requests)
                 {
-                    early_exit=true;
+                    early_exit = true;
                     break;
                 }
+
                 int tag;
-                if(!tag_generator(tag))
+                if (!pp.get_next_tag(tag))
                 {
                     // If no new tag could be generated, we need to put the
                     // remaining parcels back in the cache
-                    early_exit=true;
+                    early_exit = true;
                     break;
                 }
 
@@ -276,22 +278,42 @@ namespace hpx { namespace parcelset { namespace mpi { namespace detail
                 std::swap(buffer->handlers_, ph.second.handlers_);
                 std::swap(parcels, ph.second.parcels_);
 
-                std::size_t numbytes = encode_parcels(buffer, parcels, pp);
-                res.push_back(
-                    boost::make_shared<sender>(
-                        header(
-                            buffer->rank_
-                          , tag
-                          , static_cast<int>(buffer->buffer_->size())
-                          , static_cast<int>(numbytes)
+                try {
+                    std::size_t numbytes = encode_parcels(buffer, parcels, pp);
+                    res.push_back(
+                        boost::make_shared<sender>(
+                            header(
+                                buffer->rank_
+                              , tag
+                              , static_cast<int>(buffer->buffer_->size())
+                              , static_cast<int>(numbytes)
+                            )
+                          , buffer
+                          , communicator
                         )
-                      , buffer
-                      , communicator
-                    )
-                );
-                ++num_requests;
+                    );
+                    ++num_requests;
+                }
+                catch (naming::exhausted_credit const& e) {
+                    // one of the id_types to be serialized ran out of credits
+
+                    // return tag to tag-cache
+                    pp.relinquish_tag(tag);
+
+                    // spawn a new hpx thread which replenishes the exhausted id
+                    // and re-sends the parcels
+                    hpx::applier::register_thread_nullary(
+                        HPX_STD_BIND(&parcelset::parcelport::replenish_credit_and_send_parcels,
+                            pp.shared_from_this(), e.id_, boost::move(parcels),
+                            boost::move(buffer->handlers_)),
+                        "replenish_credit_and_send_parcels",
+                        threads::pending, true, threads::thread_priority_critical);
+
+                    // continue sending remaining parcels...
+                }
             }
-            if(early_exit)
+
+            if (early_exit)
             {
                 BOOST_FOREACH(parcel_holders::value_type & ph, phs)
                 {

@@ -11,6 +11,7 @@
 #endif
 
 #include <hpx/hpx_fwd.hpp>
+#include <hpx/runtime/agas/interface.hpp>
 #if defined(HPX_HAVE_PARCELPORT_TCPIP)
 #include <hpx/runtime/parcelset/tcp/parcelport.hpp>
 #endif
@@ -26,6 +27,8 @@
 #include <hpx/util/io_service_pool.hpp>
 #include <hpx/util/runtime_configuration.hpp>
 #include <hpx/exception.hpp>
+#include <hpx/lcos/future.hpp>
+#include <hpx/lcos/local/packaged_continuation.hpp>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
@@ -216,6 +219,40 @@ namespace hpx { namespace parcelset
                 }
             }
         }
+    }
+
+    bool parcelport::send_parcels(
+        hpx::future<bool>& f, naming::id_type& id,
+        std::vector<parcel> const & parcels,
+        std::vector<write_handler_type> const & handlers)
+    {
+        bool result = f.get();      // rethrow exception
+
+        {
+            naming::gid_type& gid = id.get_gid();
+
+            naming::gid_type::mutex_type::scoped_lock l(&gid);
+            naming::detail::add_credit_to_gid(gid, HPX_INITIAL_GLOBALCREDIT);
+        }
+
+        put_parcels(parcels, handlers);
+
+        return result;
+    }
+
+    void parcelport::replenish_credit_and_send_parcels(
+        naming::id_type& id, std::vector<parcel> const & parcels,
+        std::vector<write_handler_type> const & handlers)
+    {
+        naming::gid_type gid = id.get_gid();
+
+        using util::placeholders::_1;
+        hpx::future<bool> f = agas::incref_async(
+            gid, gid, HPX_INITIAL_GLOBALCREDIT).then(
+                util::bind(&parcelport::send_parcels, this->shared_from_this(), _1,
+                    boost::ref(id), boost::ref(parcels), boost::ref(handlers)));
+
+        f.get();
     }
 }}
 

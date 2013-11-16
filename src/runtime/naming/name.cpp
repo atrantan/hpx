@@ -16,6 +16,8 @@
 #include <hpx/runtime/actions/continuation.hpp>
 #include <hpx/runtime/agas/addressing_service.hpp>
 #include <hpx/runtime/agas/interface.hpp>
+#include <hpx/lcos/future.hpp>
+#include <hpx/lcos/local/packaged_continuation.hpp>
 
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/export.hpp>
@@ -158,27 +160,32 @@ namespace hpx { namespace naming
         }
 
         ///////////////////////////////////////////////////////////////////////
-        template <typename Lock>
-        hpx::future<bool> retrieve_new_credits(naming::gid_type& id,
-            boost::uint16_t credit, naming::id_type const& keep_alive,
-            Lock& l)
+        static bool synchronize_with_async_incref(hpx::future<bool>& f,
+            boost::uint16_t credit, naming::id_type const& /*keep_alive*/,
+            naming::gid_type& gid)
         {
-            // We add the new credits to the gids first to avoid
-            // duplicate splitting during concurrent serialization
-            // operations.
-            if (credit) detail::add_credit_to_gid(id, credit);
+            // this rethrows if the AGAS operation went wrong.
+            bool result = f.get();
 
-            // We unlock the lock as all operations on the local credit
-            // have been performed and we don't want the lock to be
-            // pending during the (possibly remote) AGAS operation.
-            l.unlock();
+            gid_type::mutex_type::scoped_lock l(&gid);
 
-            // If something goes wrong during the reference count
-            // increment below we will have already added credits to
-            // the split gid. In the worst case this will cause a
-            // memory leak. I'm not sure if it is possible to reliably
-            // handle this problem.
-            return agas::incref_async(id, id, credit, keep_alive);
+            // We add the new credits after the AGAS has acknowledged to have
+            // executed the incref.
+            if (credit)
+                detail::add_credit_to_gid(gid, credit);
+
+            return result;
+        }
+
+        hpx::future<bool> retrieve_new_credits(naming::gid_type& id,
+            boost::uint16_t credit, id_type const& keep_alive)
+        {
+            // Perform the incref asynchronously, but add the new credits only
+            // after AGAS has acknowledged the request.
+            using util::placeholders::_1;
+            return agas::incref_async(id, id, credit).then(
+                util::bind(synchronize_with_async_incref, _1, credit,
+                    keep_alive, boost::ref(id)));
         }
 
         ///////////////////////////////////////////////////////////////////////
@@ -192,29 +199,50 @@ namespace hpx { namespace naming
             boost::int16_t oldcredits = detail::get_credit_from_gid(*this);
             if (0 != oldcredits)
             {
-                // Request new credits from AGAS if needed (i.e. the remainder
-                // of the credit splitting is equal to one).
-                naming::gid_type newid = detail::split_credits_for_gid(
-                    const_cast<id_type_impl&>(*this));
+                id_type this_id(const_cast<id_type_impl*>(this));
+                naming::gid_type newid;
+
+                while (true) {
+                    // Request new credits for this id if the remaining credits fall
+                    // below the defined threshold
+                    if (detail::get_credit_from_gid(*this) <= HPX_GLOBALCREDIT_SEND_ALONG)
+                    {
+                        // Credits are exhausted, we throw an exception to unravel
+                        // serialization. The parcelports will catch this exception,
+                        // replenish the credits synchronously and retry sending the
+                        // parcel.
+                        //
+                        // Note that this should happen only very seldom as we start
+                        // replenishing credits very early (see below), which should leave
+                        // sufficient time before the credit is actually exhausted.
+                        throw exhausted_credit(this_id);
+                    }
+                    else if (detail::get_credit_from_gid(*this) < HPX_GLOBALCREDIT_THRESHOLD)
+                    {
+                        util::scoped_unlock<gid_type::mutex_type::scoped_lock> ul(l);
+
+                        // Note: the future returned by retrieve_new_credits()
+                        //       keeps this instance alive.
+                        retrieve_new_credits(const_cast<id_type_impl&>(*this),
+                            HPX_GLOBALCREDIT_THRESHOLD, this_id);
+                    }
+
+                    // if in the meantime the credit has dropped below the critical margin
+                    // we have to retry
+                    if (detail::get_credit_from_gid(*this) > HPX_GLOBALCREDIT_SEND_ALONG)
+                    {
+                        // now we split the credit
+                        newid = detail::split_credits_for_gid(
+                            const_cast<id_type_impl&>(*this),
+                            subtracts_credit(HPX_GLOBALCREDIT_SEND_ALONG));
+                        break;
+                    }
+                }
 
                 // none of the ids should be left without credits
                 BOOST_ASSERT(detail::get_credit_from_gid(*this) != 0);
                 BOOST_ASSERT(detail::get_credit_from_gid(newid) != 0);
 
-                // We now add new credits to the id which is left behind only.
-                // The credit for the newid will be handled upon arrival
-                // on the destination node.
-                if (1 == detail::get_credit_from_gid(newid))
-                {
-                    BOOST_ASSERT(detail::get_credit_from_gid(*this) >= 1);
-
-                    // note: the future returned by retrieve_new_credits()
-                    //       keeps this instance alive as it is passed along
-                    //       as the keep_alive parameter
-                    retrieve_new_credits(
-                        const_cast<id_type_impl&>(*this), HPX_INITIAL_GLOBALCREDIT,
-                        id_type(const_cast<id_type_impl*>(this)), l);
-                }
                 return newid;
             }
 
@@ -232,11 +260,16 @@ namespace hpx { namespace naming
             boost::int16_t credits = detail::get_credit_from_gid(*this);
             if (1 == credits)
             {
+                // We unlock the lock as all operations on the local credit
+                // have been performed and we don't want the lock to be
+                // pending during the (possibly remote) AGAS operation.
+                l.unlock();
+
                 // note: the future returned by retrieve_new_credits()
                 //       keeps this instance alive as it is passed along
                 //       as the keep_alive parameter
                 retrieve_new_credits(*this, HPX_INITIAL_GLOBALCREDIT,
-                    id_type(this), l);
+                    id_type(this));
             }
         }
 

@@ -197,13 +197,12 @@ namespace hpx { namespace parcelset { namespace mpi
             // add new send requests
             using HPX_STD_PLACEHOLDERS::_1;
             senders_.splice(senders_.end(), parcel_cache_.get_senders(
-                HPX_STD_BIND(&parcelport::get_next_tag, this->shared_from_this(), _1),
                 communicator_, *this, num_requests, max_requests_));
 
             // handle all send requests
             for(senders_type::iterator it = senders_.begin(); it != senders_.end(); /**/)
             {
-                if((*it)->done(*this))
+                if ((*it)->done(*this))
                 {
                     free_tags_.push_back((*it)->tag());
                     it = senders_.erase(it);
@@ -256,7 +255,6 @@ namespace hpx { namespace parcelset { namespace mpi
     void parcelport::put_parcels(std::vector<parcel> const & parcels,
         std::vector<write_handler_type> const& handlers)
     {
-        do_background_work();      // schedule message handler
         if (parcels.size() != handlers.size())
         {
             HPX_THROW_EXCEPTION(bad_parameter, "parcelport::put_parcels",
@@ -264,9 +262,9 @@ namespace hpx { namespace parcelset { namespace mpi
             return;
         }
 
+#if defined(HPX_DEBUG)
         naming::locality locality_id = parcels[0].get_destination_locality();
 
-#if defined(HPX_DEBUG)
         // make sure all parcels go to the same locality
         for (std::size_t i = 1; i != parcels.size(); ++i)
         {
@@ -274,6 +272,7 @@ namespace hpx { namespace parcelset { namespace mpi
         }
 #endif
 
+        do_background_work();      // schedule message handler
         parcel_cache_.set_parcel(parcels, handlers);
     }
 

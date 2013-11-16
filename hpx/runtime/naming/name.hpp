@@ -340,6 +340,43 @@ namespace hpx { namespace naming
     boost::uint32_t const invalid_locality_id = ~0U;
 
     ///////////////////////////////////////////////////////////////////////////
+    struct divides_credit
+    {
+        divides_credit(boost::int16_t rhs) : rhs_(rhs) {}
+
+        boost::int32_t operator()(boost::int16_t lhs) const
+        {
+            return static_cast<boost::int32_t>(lhs / rhs_);
+        }
+
+        boost::int16_t rhs_;
+    };
+
+    struct subtracts_credit
+    {
+        subtracts_credit(boost::int16_t rhs) : rhs_(rhs) {}
+
+        boost::int32_t operator()(boost::int16_t lhs) const
+        {
+            return static_cast<boost::int32_t>(lhs - rhs_);
+        }
+
+        boost::int16_t rhs_;
+    };
+
+    ///////////////////////////////////////////////////////////////////////////
+    struct exhausted_credit : std::runtime_error
+    {
+        exhausted_credit(id_type const& id)
+          : std::runtime_error("hpx::naming::exhausted_credit"), id_(id)
+        {}
+
+        ~exhausted_credit() throw() {}
+
+        id_type id_;
+    };
+
+    ///////////////////////////////////////////////////////////////////////////
     namespace detail
     {
         inline boost::int16_t get_credit_from_gid(gid_type const& id) HPX_PURE;
@@ -415,13 +452,14 @@ namespace hpx { namespace naming
 
         // splits the current credit of the given id and assigns half of it to the
         // returned copy
-        inline gid_type split_credits_for_gid(gid_type& id, int fraction = 2)
+        template <typename F>
+        inline gid_type split_credits_for_gid(gid_type& id, F op)
         {
             boost::uint64_t msb = id.get_msb();
             boost::int32_t credits = get_credit_from_gid(id);
 
-            BOOST_ASSERT(fraction > 0);
-            boost::int32_t newcredits = static_cast<boost::int32_t>(credits / fraction);
+            boost::int32_t newcredits = op(credits);
+            BOOST_ASSERT(newcredits > 0);
 
             msb &= ~gid_type::credit_mask;
             id.set_msb(msb |
