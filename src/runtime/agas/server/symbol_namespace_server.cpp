@@ -353,7 +353,7 @@ response symbol_namespace::resolve(
     // Is this entry reference counted?
     if (naming::detail::get_credit_from_gid(it->second) != 0)
     {
-        gid = naming::detail::split_credits_for_gid(it->second);
+        gid = naming::detail::split_credits_for_gid(it->second, naming::divides_credit(2));
 
         LAGAS_(debug) << (boost::format(
             "symbol_namespace::resolve, split credits for entry: "
