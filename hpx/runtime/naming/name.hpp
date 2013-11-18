@@ -55,8 +55,9 @@ namespace hpx { namespace naming
         typedef gid_type size_type;
         typedef gid_type difference_type;
 
-        static boost::uint64_t const credit_base_mask = 0x7ffful;
+        static boost::uint64_t const credit_base_mask = 0x3ffful;
         static boost::uint64_t const credit_mask = credit_base_mask << 16;
+        static boost::uint64_t const async_incref_mask = 0x40000000ul; //-V112
         static boost::uint64_t const was_split_mask = 0x80000000ul; //-V112
         static boost::uint64_t const locality_id_mask = 0xffffffff00000000ull;
 
@@ -393,8 +394,24 @@ namespace hpx { namespace naming
                 ((boost::int32_t(credit) << 16) & gid_type::credit_mask));
         }
 
+        inline void set_credit_split_mask_for_gid(gid_type& id)
+        {
+            id.set_msb(id.get_msb() | gid_type::was_split_mask);
+        }
+
+        inline void set_async_incref_mask_for_gid(gid_type& id)
+        {
+            id.set_msb(id.get_msb() | gid_type::async_incref_mask);
+        }
+
+        inline void reset_async_incref_mask_for_gid(gid_type& id)
+        {
+            id.set_msb(id.get_msb() & ~gid_type::async_incref_mask);
+        }
+
         // has side effects, can't be pure
-        inline boost::int16_t add_credit_to_gid(gid_type& id, boost::int16_t credit)
+        inline boost::int16_t add_credit_to_gid(gid_type& id, boost::int16_t credit,
+            bool reset_async_incref_flag = false)
         {
             BOOST_ASSERT(credit < (std::numeric_limits<boost::int16_t>::max)());
 
@@ -404,6 +421,8 @@ namespace hpx { namespace naming
             BOOST_ASSERT(0 == (c & ~gid_type::credit_base_mask));
 
             set_credit_for_gid(id, c);
+            if (reset_async_incref_flag)
+                reset_async_incref_mask_for_gid(id);
 
             BOOST_ASSERT(c < (std::numeric_limits<boost::int16_t>::max)());
             return static_cast<boost::uint16_t>(c);
@@ -427,7 +446,8 @@ namespace hpx { namespace naming
 
         inline boost::uint64_t strip_credit_from_gid(boost::uint64_t msb)
         {
-            return msb & ~(gid_type::credit_mask | gid_type::was_split_mask);
+            return msb & ~(gid_type::credit_mask | gid_type::was_split_mask |
+                gid_type::async_incref_mask);
         }
 
         inline gid_type& strip_credit_from_gid(gid_type& id)
@@ -443,11 +463,6 @@ namespace hpx { namespace naming
             boost::uint64_t const msb = strip_credit_from_gid(id.get_msb());
             boost::uint64_t const lsb = id.get_lsb();
             return gid_type(msb, lsb);
-        }
-
-        inline void set_credit_split_mask_for_gid(gid_type& id)
-        {
-            id.set_msb(id.get_msb() | gid_type::was_split_mask);
         }
 
         // splits the current credit of the given id and assigns half of it to the
@@ -475,6 +490,11 @@ namespace hpx { namespace naming
         inline bool gid_was_split(gid_type const& id)
         {
             return (id.get_msb() & gid_type::was_split_mask) != 0;
+        }
+
+        inline bool gid_is_being_replenished(gid_type const& id)
+        {
+            return (id.get_msb() & gid_type::async_incref_mask) != 0;
         }
     }
 

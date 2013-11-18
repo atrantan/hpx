@@ -172,7 +172,7 @@ namespace hpx { namespace naming
             // We add the new credits after the AGAS has acknowledged to have
             // executed the incref.
             if (credit)
-                detail::add_credit_to_gid(gid, credit);
+                detail::add_credit_to_gid(gid, credit, true);
 
             return result;
         }
@@ -217,8 +217,12 @@ namespace hpx { namespace naming
                         // sufficient time before the credit is actually exhausted.
                         throw exhausted_credit(this_id);
                     }
-                    else if (detail::get_credit_from_gid(*this) < HPX_GLOBALCREDIT_THRESHOLD)
+                    else if (!gid_is_being_replenished(*this) &&
+                        detail::get_credit_from_gid(*this) < HPX_GLOBALCREDIT_THRESHOLD)
                     {
+                        // set the flag that tells about the ongoing replenish operation
+                        set_async_incref_mask_for_gid(const_cast<id_type_impl&>(*this));
+
                         util::scoped_unlock<gid_type::mutex_type::scoped_lock> ul(l);
 
                         // Note: the future returned by retrieve_new_credits()
@@ -261,6 +265,9 @@ namespace hpx { namespace naming
             boost::int16_t credits = detail::get_credit_from_gid(*this);
             if (1 == credits)
             {
+                // set the flag that tells about the ongoing replenish operation
+                set_async_incref_mask_for_gid(*this);
+
                 // We unlock the lock as all operations on the local credit
                 // have been performed and we don't want the lock to be
                 // pending during the (possibly remote) AGAS operation.
