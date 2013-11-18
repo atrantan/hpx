@@ -205,7 +205,7 @@ namespace hpx { namespace naming
                 while (true) {
                     // Request new credits for this id if the remaining credits fall
                     // below the defined threshold
-                    if (detail::get_credit_from_gid(*this) <= HPX_GLOBALCREDIT_SEND_ALONG)
+                    if (detail::get_credit_from_gid(*this) <= 2)
                     {
                         // Credits are exhausted, we throw an exception to unravel
                         // serialization. The parcelports will catch this exception,
@@ -229,12 +229,13 @@ namespace hpx { namespace naming
 
                     // if in the meantime the credit has dropped below the critical margin
                     // we have to retry
-                    if (detail::get_credit_from_gid(*this) > HPX_GLOBALCREDIT_SEND_ALONG)
+                    boost::int16_t credit = detail::get_credit_from_gid(*this);
+                    if (credit > HPX_GLOBALCREDIT_SEND_ALONG)
                     {
                         // now we split the credit
                         newid = detail::split_credits_for_gid(
                             const_cast<id_type_impl&>(*this),
-                            subtracts_credit(HPX_GLOBALCREDIT_SEND_ALONG));
+                            subtracts_credit(credit - HPX_GLOBALCREDIT_SEND_ALONG));
                         break;
                     }
                 }
