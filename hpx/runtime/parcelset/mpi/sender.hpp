@@ -11,6 +11,7 @@
 #include <hpx/runtime/parcelset/mpi/header.hpp>
 #include <hpx/runtime/parcelset/mpi/allocator.hpp>
 #include <hpx/util/high_resolution_clock.hpp>
+#include <hpx/util/output_id_splitting.hpp>
 
 #include <boost/assert.hpp>
 #include <boost/move/move.hpp>
@@ -33,6 +34,7 @@ namespace hpx { namespace parcelset { namespace mpi
         std::vector<parcel> parcels_;
         std::vector<write_handler_type> handlers_;
         performance_counters::parcels::data_point send_data_;
+        util::detail::output_id_splitting manage_ids_;
     };
 
     ///////////////////////////////////////////////////////////////////////////
@@ -65,7 +67,10 @@ namespace hpx { namespace parcelset { namespace mpi
 
             header_.assert_valid();
             BOOST_ASSERT(header_.rank() != util::mpi_environment::rank());
+        }
 
+        void initiate_send()
+        {
             MPI_Isend(
                 header_.data(),         // Data pointer
                 header_.data_size_,     // Size

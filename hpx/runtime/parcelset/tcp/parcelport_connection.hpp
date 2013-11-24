@@ -14,6 +14,7 @@
 
 #include <hpx/runtime/applier/applier.hpp>
 #include <hpx/util/connection_cache.hpp>
+#include <hpx/util/output_id_splitting.hpp>
 #include <hpx/performance_counters/parcels/data_point.hpp>
 #include <hpx/performance_counters/parcels/gatherer.hpp>
 #include <hpx/util/high_resolution_timer.hpp>
@@ -75,12 +76,12 @@ namespace hpx { namespace parcelset { namespace tcp
             }
         }
 
-        void set_parcel (parcel const& p)
+        bool set_parcel (parcel const& p)
         {
-            set_parcel(std::vector<parcel>(1, p));
+            return set_parcel(std::vector<parcel>(1, p));
         }
 
-        void set_parcel (std::vector<parcel> const& p);
+        bool set_parcel (std::vector<parcel> const& p);
 
         /// Get the socket associated with the parcelport_connection.
         boost::asio::ip::tcp::socket& socket() { return socket_; }
@@ -293,6 +294,8 @@ namespace hpx { namespace parcelset { namespace tcp
 #if defined(HPX_TRACK_STATE_OF_OUTGOING_TCP_CONNECTION)
         state state_;
 #endif
+        // helper class for dis incref handling
+        util::detail::output_id_splitting manage_ids_;
     };
 
     typedef boost::shared_ptr<parcelport_connection> parcelport_connection_ptr;

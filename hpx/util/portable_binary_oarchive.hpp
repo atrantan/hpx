@@ -58,6 +58,9 @@ namespace hpx { namespace util
 
 namespace hpx { namespace util
 {
+///////////////////////////////////////////////////////////////////////////////
+// forward declaration only
+namespace detail { class output_id_splitting; }
 
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
 // exception to be thrown if integer read from archive doesn't fit
@@ -111,6 +114,9 @@ class HPX_SERIALIZATION_EXPORT portable_binary_oarchive :
     typedef boost::archive::detail::common_oarchive<
         portable_binary_oarchive
     > archive_base_t;
+
+    util::detail::output_id_splitting& data_;
+
 #ifndef BOOST_NO_MEMBER_TEMPLATE_FRIENDS
 public:
 #else
@@ -241,18 +247,22 @@ protected:
 
 public:
     template <typename Container>
-    portable_binary_oarchive(Container& buffer, binary_filter* filter = 0, unsigned flags = 0)
+    portable_binary_oarchive(Container& buffer, util::detail::output_id_splitting& data,
+            binary_filter* filter = 0, unsigned flags = 0)
       : primitive_base_t(buffer, flags),
-        archive_base_t(flags)
+        archive_base_t(flags),
+        data_(data)
     {
         init(filter, flags);
     }
 
     template <typename Container>
-    portable_binary_oarchive(Container& buffer, std::vector<serialization_chunk>* chunks,
+    portable_binary_oarchive(Container& buffer, util::detail::output_id_splitting& data,
+            std::vector<serialization_chunk>* chunks,
             binary_filter* filter = 0, unsigned flags = 0)
       : primitive_base_t(buffer, chunks, flags),
-        archive_base_t(flags)
+        archive_base_t(flags),
+        data_(data)
     {
         init(filter, flags);
     }
@@ -301,6 +311,12 @@ public:
     void save_array(boost::serialization::array<signed char> const& a, unsigned int)
     {
         this->primitive_base_t::save_array(a);
+    }
+
+    // manage archive specific data
+    util::detail::output_id_splitting& get_data()
+    {
+        return data_;
     }
 };
 

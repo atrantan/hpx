@@ -47,8 +47,10 @@ namespace hpx { namespace parcelset { namespace shmem
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    void parcelport_connection::set_parcel(std::vector<parcel> const& pv)
+    bool parcelport_connection::set_parcel(std::vector<parcel> const& pv)
     {
+        bool result = true;
+
 #if defined(HPX_DEBUG)
         // make sure that all parcels go to the same locality
         BOOST_FOREACH(parcel const& p, pv)
@@ -81,7 +83,7 @@ namespace hpx { namespace parcelset { namespace shmem
             {
                 // Serialize the data
                 util::portable_binary_oarchive archive(
-                    out_buffer_.get_buffer(), 0, archive_flags_);
+                    out_buffer_.get_buffer(), manage_ids_, 0, archive_flags_);
 
                 std::size_t count = pv.size();
                 archive << count;
@@ -93,6 +95,9 @@ namespace hpx { namespace parcelset { namespace shmem
 
                 arg_size = archive.bytes_written();
             }
+
+            // make sure all pending id-splitting operations are performed
+            result = manage_ids_.process();
 
             // store the time required for serialization
             send_data_.serialization_time_ = timer.elapsed_nanoseconds();
@@ -106,7 +111,7 @@ namespace hpx { namespace parcelset { namespace shmem
                 boost::str(boost::format(
                     "parcelport: parcel serialization failed, caught "
                     "boost::archive::archive_exception: %s") % e.what()));
-            return;
+            return result;
         }
         catch (boost::system::system_error const& e) {
             HPX_THROW_EXCEPTION(serialization_error,
@@ -115,7 +120,7 @@ namespace hpx { namespace parcelset { namespace shmem
                     "parcelport: parcel serialization failed, caught "
                     "boost::system::system_error: %d (%s)") %
                         e.code().value() % e.code().message()));
-            return;
+            return result;
         }
         catch (std::exception const& e) {
             HPX_THROW_EXCEPTION(serialization_error,
@@ -123,12 +128,14 @@ namespace hpx { namespace parcelset { namespace shmem
                 boost::str(boost::format(
                     "parcelport: parcel serialization failed, caught "
                     "std::exception: %s") % e.what()));
-            return;
+            return result;
         }
 
         send_data_.num_parcels_ = pv.size();
         send_data_.bytes_ = arg_size;
         send_data_.raw_bytes_ = out_buffer_.size();
+
+        return result;
     }
 }}}
 

@@ -145,10 +145,7 @@ endif()
 add_hpx_library_headers(hpx_serialization
   GLOB_RECURSE GLOBS "${hpx_SOURCE_DIR}/hpx/util/*_binary_*.hpp")
 add_hpx_library_headers(hpx_serialization
-  GLOB_RECURSE GLOBS "${hpx_SOURCE_DIR}/hpx/util/ichunk_manager.hpp"
-  APPEND)
-add_hpx_library_headers(hpx_serialization
-  GLOB_RECURSE GLOBS "${hpx_SOURCE_DIR}/hpx/util/ochunk_manager.hpp"
+  GLOB_RECURSE GLOBS "${hpx_SOURCE_DIR}/hpx/util/*chunk_manager.hpp"
   APPEND)
 
 # libhpx headers

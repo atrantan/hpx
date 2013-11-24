@@ -66,8 +66,10 @@ namespace hpx { namespace parcelset { namespace ibverbs
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    void parcelport_connection::set_parcel(std::vector<parcel> const& pv)
+    bool parcelport_connection::set_parcel(std::vector<parcel> const& pv)
     {
+        bool result = true;
+
 #if defined(HPX_DEBUG)
         // make sure that all parcels go to the same locality
         BOOST_FOREACH(parcel const& p, pv)
@@ -110,7 +112,7 @@ namespace hpx { namespace parcelset { namespace ibverbs
                 }
 
                 util::portable_binary_oarchive archive(
-                    out_buffer_, filter.get(), archive_flags);
+                    out_buffer_, manage_ids_, filter.get(), archive_flags);
 
                 std::size_t count = pv.size();
                 archive << count;
@@ -122,6 +124,9 @@ namespace hpx { namespace parcelset { namespace ibverbs
 
                 arg_size = archive.bytes_written();
             }
+
+            // make sure all pending id-splitting operations are performed
+            result = manage_ids.process();
 
             // store the time required for serialization
             send_data_.serialization_time_ = timer.elapsed_nanoseconds();
@@ -135,7 +140,7 @@ namespace hpx { namespace parcelset { namespace ibverbs
                 boost::str(boost::format(
                     "parcelport: parcel serialization failed, caught "
                     "boost::archive::archive_exception: %s") % e.what()));
-            return;
+            return result;
         }
         catch (boost::system::system_error const& e) {
             HPX_THROW_EXCEPTION(serialization_error,
@@ -144,7 +149,7 @@ namespace hpx { namespace parcelset { namespace ibverbs
                     "parcelport: parcel serialization failed, caught "
                     "boost::system::system_error: %d (%s)") %
                         e.code().value() % e.code().message()));
-            return;
+            return result;
         }
         catch (std::exception const& e) {
             HPX_THROW_EXCEPTION(serialization_error,
@@ -152,12 +157,14 @@ namespace hpx { namespace parcelset { namespace ibverbs
                 boost::str(boost::format(
                     "parcelport: parcel serialization failed, caught "
                     "std::exception: %s") % e.what()));
-            return;
+            return result;
         }
 
         send_data_.num_parcels_ = pv.size();
         send_data_.bytes_ = arg_size;
         send_data_.raw_bytes_ = out_buffer_.size();
+
+        return result;
     }
 }}}
 

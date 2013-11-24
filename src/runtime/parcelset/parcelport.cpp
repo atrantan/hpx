@@ -232,7 +232,7 @@ namespace hpx { namespace parcelset
             naming::gid_type& gid = id.get_gid();
 
             naming::gid_type::mutex_type::scoped_lock l(&gid);
-            naming::detail::add_credit_to_gid(gid, HPX_INITIAL_GLOBALCREDIT);
+            naming::detail::add_credit_to_gid(gid, HPX_GLOBALCREDIT_INITIAL, true);
         }
 
         put_parcels(parcels, handlers);
@@ -248,7 +248,7 @@ namespace hpx { namespace parcelset
 
         using util::placeholders::_1;
         hpx::future<bool> f = agas::incref_async(
-            gid, gid, HPX_INITIAL_GLOBALCREDIT).then(
+            gid, gid, HPX_GLOBALCREDIT_INITIAL).then(
                 util::bind(&parcelport::send_parcels, this->shared_from_this(), _1,
                     boost::ref(id), boost::ref(parcels), boost::ref(handlers)));
 

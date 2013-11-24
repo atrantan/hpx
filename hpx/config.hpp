@@ -302,18 +302,12 @@
 ///////////////////////////////////////////////////////////////////////////////
 /// This defines the initial global reference count associated with any created
 /// object.
-#if !defined(HPX_INITIAL_GLOBALCREDIT)
-#  define HPX_INITIAL_GLOBALCREDIT 4095
+#if !defined(HPX_GLOBALCREDIT_INITIAL)
+#  define HPX_GLOBALCREDIT_INITIAL 4095
 #endif
 
 #if !defined(HPX_GLOBALCREDIT_THRESHOLD)
-#  define HPX_GLOBALCREDIT_THRESHOLD (HPX_INITIAL_GLOBALCREDIT+1)/2
-#endif
-
-// The amount of credits sent along with a split id should be sufficient to
-// allow for at least 2 additional splits before the creadit is exhausted
-#if !defined(HPX_GLOBALCREDIT_SEND_ALONG)
-#  define HPX_GLOBALCREDIT_SEND_ALONG 8
+#  define HPX_GLOBALCREDIT_THRESHOLD (HPX_GLOBALCREDIT_INITIAL+1)/2
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -366,18 +366,6 @@ namespace hpx { namespace naming
     };
 
     ///////////////////////////////////////////////////////////////////////////
-    struct exhausted_credit : std::runtime_error
-    {
-        exhausted_credit(id_type const& id)
-          : std::runtime_error("hpx::naming::exhausted_credit"), id_(id)
-        {}
-
-        ~exhausted_credit() throw() {}
-
-        id_type id_;
-    };
-
-    ///////////////////////////////////////////////////////////////////////////
     namespace detail
     {
         inline boost::int16_t get_credit_from_gid(gid_type const& id) HPX_PURE;
@@ -475,6 +463,7 @@ namespace hpx { namespace naming
 
             boost::int32_t newcredits = op(credits);
             BOOST_ASSERT(newcredits > 0);
+            BOOST_ASSERT(credits - newcredits > 0);
 
             msb &= ~gid_type::credit_mask;
             id.set_msb(msb |
@@ -561,7 +550,8 @@ namespace hpx { namespace naming
         private:
             // credit management (called during serialization), this function
             // has to be 'const' as save() above has to be 'const'.
-            naming::gid_type preprocess_gid() const;
+            template <typename Archive>
+            naming::gid_type preprocess_gid(Archive& ar) const;
 
             void postprocess_gid();
 

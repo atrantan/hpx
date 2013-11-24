@@ -10,6 +10,7 @@
 #include <hpx/state.hpp>
 #include <hpx/util/portable_binary_iarchive.hpp>
 #include <hpx/util/portable_binary_oarchive.hpp>
+#include <hpx/util/output_id_splitting.hpp>
 #include <hpx/util/base_object.hpp>
 #include <hpx/runtime/applier/applier.hpp>
 #include <hpx/runtime/components/stubs/runtime_support.hpp>
@@ -26,6 +27,90 @@
 
 #include <boost/mpl/bool.hpp>
 
+///////////////////////////////////////////////////////////////////////////////
+//
+//          Here is how our distributed garbage collection works
+//
+// Each id_type instance - while always referring to some (possibly remote)
+// entity - can either be 'managed' or 'unmanaged'. If an id_type instance is
+// 'unmanaged' it does not perform any garbage collection. Otherwise (if it's 
+// 'managed'), all of its copies are globally tracked which allows to
+// automatically delete the entity a particular id_type instance is referring
+// to after the last reference to it goes out of scope.
+//
+// An id_type instance is essentially a shared_ptr<> maintaining two reference
+// counts: a local reference count and a global one. The local reference count
+// is incremented whenever the id_type instance is copied locally, and decremented
+// whenever one of the local copies goes out of scope. At the point when the last
+// local copy goes out of scope, it returns its current share of the global
+// reference count back to AGAS. The share of the global reference count owned
+// by all copies of an id_type instance on a single locality is called its
+// credit. Credits are issued in chunks which allows to create a global copy
+// of an id_type instance (like passing it to another locality) without needing
+// to talk to AGAS to request a global reference count increment. The referenced
+// entity is free'd when the global reference count falls to zero.
+//
+// Any newly created object assumes an initial credit. This credit is not
+// accounted for by AGAS as long as no global increment or decrement requests
+// are received. It is important to understand that there is no way to distingish
+// whether an object has already been deleted (and therefore no entry exists in
+// the table storing the global reference count for this object) or whether the
+// object is still alive but no increment/decrement requests have been received
+// by AGAS yet. While this is a pure optimization to avoid storing global
+// reference counts for all objects, it has implications for the implemented
+// garbage collection algorithms at large.
+//
+// As long as an id_type instance is not sent to another locality (a locality
+// different from the initial locality creating the referenced entity), all
+// lifetime management for this entity can be handled purely local without
+// even talking to AGAS.
+//
+// Sending an id_type instance to another locality (which includes using an
+// id_type as the destination for an action) splits the current credit into
+// two parts. One part stays with the id_type on the sending locality, the
+// part is sent along to the destination locality where it turns into the
+// global credit associated with the remote copy of the id_type. As stated
+// above, this allows to avoid talking to AGAS for incrementing the global
+// reference count as long as there is sufficient global credit left in order
+// to be split.
+//
+// The current share of the global credit associated with an id_type instance
+// is encoded in the bits 80..95 of the underlying gid_type. The most
+// significant bit of this bit range (bit 95) encodes whether the given id_type
+// has been split at any time. This information is needed to be able to decide
+// whether a garbage collection can be assumed to be a purely local operation.
+//
+// If the global credit is too small to be split, a separate AGAS request is
+// issued which increments the global reference count by a certain amount
+// which enables more split operations. Please note that the amount of
+// credits sent along to the other locality is never larger than the known
+// current credit before splitting. IOW, either splitting succeeds (as
+// sufficient current credits are available) or the outgoing parcel has to wait
+// for AGAS acknowledging the increment operation on the associated global
+// reference count.
+//
+// The goal is to avoid the situation as much as possible where an outgoing
+// parcel is delayed because of the necessary AGAS request incrementing the
+// global reference count. For this reason the implementation starts an
+// asynchronous AGAS increment operation as soon as the current credit drops
+// below a given threshold. Once this request to AGAS is acknowledged, the
+// credit is replenished. The hope is that the asynchronous operation finishes
+// before the id_type runs out of sufficient credits for a split operation.
+//
+// The second most significant bit of the credit bit range (bit 94) encodes
+// whether a asynchronous increment operation is in flight. This avoids more
+// than one of those requests concurrently. It is set when the operation is
+// started and is reset as soon as the AGAS request is acknowledged.
+//
+// The various constants used for the described scheme are:
+//
+//    HPX_GLOBALCREDIT_INITIAL
+//    HPX_GLOBALCREDIT_THRESHOLD
+//    HPX_GLOBALCREDIT_SEND_ALONG
+//
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
 namespace hpx { namespace naming { namespace detail
 {
     struct gid_serialization_data;
@@ -167,12 +252,12 @@ namespace hpx { namespace naming
             // this rethrows if the AGAS operation went wrong.
             bool result = f.get();
 
-            gid_type::mutex_type::scoped_lock l(&gid);
-
             // We add the new credits after the AGAS has acknowledged to have
             // executed the incref.
-            if (credit)
+            if (credit) {
+                gid_type::mutex_type::scoped_lock l(&gid);
                 detail::add_credit_to_gid(gid, credit, true);
+            }
 
             return result;
         }
@@ -190,14 +275,17 @@ namespace hpx { namespace naming
 
         ///////////////////////////////////////////////////////////////////////
         // prepare the given id, note: this function modifies the passed id
-        naming::gid_type id_type_impl::preprocess_gid() const
+        template <typename Archive>
+        naming::gid_type id_type_impl::preprocess_gid(Archive& ar) const
         {
+            util::detail::output_id_splitting& manage_splitting = ar.get_data();
+
             gid_type::mutex_type::scoped_lock l(this);
 
             // If the initial credit is zero the gid is 'unmanaged' and no
             // additional action needs to be performed.
-            boost::int16_t oldcredits = detail::get_credit_from_gid(*this);
-            if (0 != oldcredits)
+            boost::int16_t credit = detail::get_credit_from_gid(*this);
+            if (0 != credit)
             {
                 id_type this_id(const_cast<id_type_impl*>(this));
                 naming::gid_type newid;
@@ -205,17 +293,16 @@ namespace hpx { namespace naming
                 while (true) {
                     // Request new credits for this id if the remaining credits fall
                     // below the defined threshold
-                    if (detail::get_credit_from_gid(*this) <= 2)
+                    if (credit == 2)
                     {
-                        // Credits are exhausted, we throw an exception to unravel
-                        // serialization. The parcelports will catch this exception,
-                        // replenish the credits synchronously and retry sending the
-                        // parcel.
+                        // Credits are exhausted, we store the id for the parcelports to
+                        // replenish the credits synchronously and delay sending the
+                        // parcel until done.
                         //
                         // Note that this should happen only very seldom as we start
                         // replenishing credits very early (see below), which should leave
                         // sufficient time before the credit is actually exhausted.
-                        throw exhausted_credit(this_id);
+                        manage_splitting.add_exhausted_id(this_id);
                     }
                     else if (!gid_is_being_replenished(*this) &&
                         detail::get_credit_from_gid(*this) < HPX_GLOBALCREDIT_THRESHOLD)
@@ -223,25 +310,27 @@ namespace hpx { namespace naming
                         // set the flag that tells about the ongoing replenish operation
                         set_async_incref_mask_for_gid(const_cast<id_type_impl&>(*this));
 
-                        util::scoped_unlock<gid_type::mutex_type::scoped_lock> ul(l);
+                        {
+                            util::scoped_unlock<gid_type::mutex_type::scoped_lock> ul(l);
 
-                        // Note: the future returned by retrieve_new_credits()
-                        //       keeps this instance alive.
-                        retrieve_new_credits(const_cast<id_type_impl&>(*this),
-                            HPX_GLOBALCREDIT_THRESHOLD, this_id);
+                            // Note: the future returned by retrieve_new_credits()
+                            //       keeps this instance alive.
+                            manage_splitting.add_incref_request(
+                                retrieve_new_credits(const_cast<id_type_impl&>(*this),
+                                    HPX_GLOBALCREDIT_THRESHOLD, this_id));
+                        }
+
+                        // if in the meantime the credit has dropped below the critical
+                        // margin we have to retry
+                        credit = detail::get_credit_from_gid(*this);
+                        if (credit == 2)
+                            continue;
                     }
 
-                    // if in the meantime the credit has dropped below the critical margin
-                    // we have to retry
-                    boost::int16_t credit = detail::get_credit_from_gid(*this);
-                    if (credit > HPX_GLOBALCREDIT_SEND_ALONG)
-                    {
-                        // now we split the credit
-                        newid = detail::split_credits_for_gid(
-                            const_cast<id_type_impl&>(*this),
-                            subtracts_credit(credit - HPX_GLOBALCREDIT_SEND_ALONG));
-                        break;
-                    }
+                    // now we split the credit
+                    newid = detail::split_credits_for_gid(
+                        const_cast<id_type_impl&>(*this), divides_credit(2));
+                    break;
                 }
 
                 // none of the ids should be left without credits
@@ -276,7 +365,7 @@ namespace hpx { namespace naming
                 // note: the future returned by retrieve_new_credits()
                 //       keeps this instance alive as it is passed along
                 //       as the keep_alive parameter
-                retrieve_new_credits(*this, HPX_INITIAL_GLOBALCREDIT,
+                retrieve_new_credits(*this, HPX_GLOBALCREDIT_INITIAL,
                     id_type(this));
             }
         }
@@ -292,12 +381,12 @@ namespace hpx { namespace naming
         void id_type_impl::save(Archive& ar) const
         {
             if(ar.flags() & util::disable_array_optimization) {
-                naming::gid_type split_id(preprocess_gid());
+                naming::gid_type split_id(preprocess_gid(ar));
                 ar << split_id << type_;
             }
             else {
                 gid_serialization_data data;
-                data.gid_ = preprocess_gid();
+                data.gid_ = preprocess_gid(ar);
                 data.type_ = type_;
 
                 ar.save(data);
@@ -402,7 +491,7 @@ namespace hpx { namespace naming
     ///////////////////////////////////////////////////////////////////////////
     inline naming::id_type get_colocation_id_sync(naming::id_type const& id, error_code& ec)
     {
-        // FIXME: Resolve the locality instead of deducing it from the target 
+        // FIXME: Resolve the locality instead of deducing it from the target
         //        GID, otherwise this will break once we start moving objects.
         boost::uint32_t locality_id = get_locality_id_from_gid(id.get_gid());
         return get_id_from_locality_id(locality_id);

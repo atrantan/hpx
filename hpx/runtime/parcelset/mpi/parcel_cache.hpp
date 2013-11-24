@@ -12,6 +12,8 @@
 #include <hpx/util/runtime_configuration.hpp>
 #include <hpx/util/high_resolution_timer.hpp>
 #include <hpx/util/scoped_unlock.hpp>
+#include <hpx/util/portable_binary_oarchive.hpp>
+#include <hpx/util/output_id_splitting.hpp>
 
 #include <boost/cstdint.hpp>
 #include <boost/noncopyable.hpp>
@@ -82,7 +84,7 @@ namespace hpx { namespace parcelset { namespace mpi { namespace detail
             }
 
             std::string array_optimization =
-                get_config_entry("hpx.parcel.array_optimization", "1");
+                get_config_entry("hpx.parcel.mpi.array_optimization", "1");
             if (boost::lexical_cast<int>(array_optimization) == 0)
                 archive_flags_ |= util::disable_array_optimization;
 
@@ -123,19 +125,20 @@ namespace hpx { namespace parcelset { namespace mpi { namespace detail
         }
 
         template <typename Parcelport>
-        std::size_t encode_parcels(boost::shared_ptr<parcel_buffer> & buffer,
-            std::vector<parcel> const & pv, Parcelport& pp)
+        bool encode_parcels(boost::shared_ptr<parcel_buffer> & buffer,
+            std::vector<parcel> const & pv, Parcelport& pp, std::size_t& arg_size)
         {
             // collect argument sizes from parcels
-            std::size_t arg_size = 0;
+            arg_size = 0;
 
+            bool result = true;
             buffer->rank_ = pv[0].get_destination_locality().get_rank();
             if (buffer->rank_ == -1)
             {
                 HPX_THROW_EXCEPTION(serialization_error,
                     "mpi::detail::parcel_cache::set_parcel",
                     "can't send over MPI without a known destination rank");
-                return 0;
+                return result;
             }
 
             BOOST_FOREACH(parcel const & p, pv)
@@ -144,7 +147,6 @@ namespace hpx { namespace parcelset { namespace mpi { namespace detail
             }
 
             util::high_resolution_timer timer;
-
             boost::shared_ptr<std::vector<char/*, allocator<char>*/ > >& b =
                  buffer->buffer_;
 
@@ -169,18 +171,23 @@ namespace hpx { namespace parcelset { namespace mpi { namespace detail
                     archive_flags |= util::enable_compression;
                 }
 
-                util::portable_binary_oarchive archive(
-                    *buffer->buffer_, filter.get(), archive_flags);
-
-                std::size_t count = pv.size();
-                archive << count; //-V128
-
-                BOOST_FOREACH(parcel const& p, pv)
                 {
-                    archive << p;
+                    util::portable_binary_oarchive archive(*buffer->buffer_,
+                        buffer->manage_ids_, filter.get(), archive_flags);
+
+                    std::size_t count = pv.size();
+                    archive << count; //-V128
+
+                    BOOST_FOREACH(parcel const& p, pv)
+                    {
+                        archive << p;
+                    }
+
+                    arg_size = archive.bytes_written();
                 }
 
-                arg_size = archive.bytes_written();
+                // make sure all pending id-splitting operations are performed
+                result = buffer->manage_ids_.process();
 
                 // store the time required for serialization
                 datapoint.serialization_time_ =
@@ -195,7 +202,7 @@ namespace hpx { namespace parcelset { namespace mpi { namespace detail
                     boost::str(boost::format(
                         "parcelport: parcel serialization failed, caught "
                         "boost::archive::archive_exception: %s") % e.what()));
-                return 0;
+                return result;
             }
             catch (boost::system::system_error const& e) {
                 HPX_THROW_EXCEPTION(serialization_error,
@@ -204,7 +211,7 @@ namespace hpx { namespace parcelset { namespace mpi { namespace detail
                         "parcelport: parcel serialization failed, caught "
                         "boost::system::system_error: %d (%s)") %
                             e.code().value() % e.code().message()));
-                return 0;
+                return result;
             }
             catch (std::exception const& e) {
                 HPX_THROW_EXCEPTION(serialization_error,
@@ -212,7 +219,7 @@ namespace hpx { namespace parcelset { namespace mpi { namespace detail
                     boost::str(boost::format(
                         "parcelport: parcel serialization failed, caught "
                         "std::exception: %s") % e.what()));
-                return 0;
+                return result;
             }
 
             // make sure outgoing message is not larger than allowed
@@ -225,14 +232,14 @@ namespace hpx { namespace parcelset { namespace mpi { namespace detail
                         "than allowed (created: %ld, allowed: %ld), consider"
                         "configuring larger hpx.parcel.max_message_size") %
                             buffer->buffer_->size() % max_outbound_size_));
-                return 0;
+                return result;
             }
 
             datapoint.raw_bytes_ = buffer->buffer_->size();
             datapoint.bytes_ = arg_size;
             datapoint.num_parcels_ = pv.size();
 
-            return arg_size;
+            return result;
         }
 
         template <typename Parcelport>
@@ -271,46 +278,40 @@ namespace hpx { namespace parcelset { namespace mpi { namespace detail
                 }
 
                 // collect outgoing data
-                boost::shared_ptr<parcel_buffer> buffer(boost::make_shared<parcel_buffer>());
+                boost::shared_ptr<parcel_buffer> buffer(
+                    boost::make_shared<parcel_buffer>());
                 std::vector<parcel> parcels;
 
                 buffer->rank_ = ph.first;
                 std::swap(buffer->handlers_, ph.second.handlers_);
                 std::swap(parcels, ph.second.parcels_);
 
-                try {
-                    std::size_t numbytes = encode_parcels(buffer, parcels, pp);
-                    res.push_back(
-                        boost::make_shared<sender>(
-                            header(
-                                buffer->rank_
-                              , tag
-                              , static_cast<int>(buffer->buffer_->size())
-                              , static_cast<int>(numbytes)
-                            )
-                          , buffer
-                          , communicator
+                std::size_t numbytes = 0;
+                bool result = encode_parcels(buffer, parcels, pp, numbytes);
+
+                boost::shared_ptr<sender> sender_(
+                    boost::make_shared<sender>(
+                        header(
+                            buffer->rank_
+                          , tag
+                          , static_cast<int>(buffer->buffer_->size())
+                          , static_cast<int>(numbytes)
                         )
-                    );
-                    ++num_requests;
+                      , buffer
+                      , communicator
+                    ));
+
+                if (!result)
+                {
+                    // ...
+                    continue;
                 }
-                catch (naming::exhausted_credit const& e) {
-                    // one of the id_types to be serialized ran out of credits
 
-                    // return tag to tag-cache
-                    pp.relinquish_tag(tag);
+                // start operation
+                res.push_back(sender_);
+                ++num_requests;
 
-                    // spawn a new hpx thread which replenishes the exhausted id
-                    // and re-sends the parcels
-                    hpx::applier::register_thread_nullary(
-                        HPX_STD_BIND(&parcelset::parcelport::replenish_credit_and_send_parcels,
-                            pp.shared_from_this(), e.id_, boost::move(parcels),
-                            boost::move(buffer->handlers_)),
-                        "replenish_credit_and_send_parcels",
-                        threads::pending, true, threads::thread_priority_critical);
-
-                    // continue sending remaining parcels...
-                }
+                sender_->initiate_send();
             }
 
             if (early_exit)

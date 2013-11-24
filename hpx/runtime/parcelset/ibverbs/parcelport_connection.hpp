@@ -15,6 +15,7 @@
 #include <hpx/runtime/parcelset/ibverbs/data_buffer.hpp>
 #include <hpx/runtime/applier/applier.hpp>
 #include <hpx/util/connection_cache.hpp>
+#include <hpx/util/output_id_splitting.hpp>
 #include <hpx/performance_counters/parcels/data_point.hpp>
 #include <hpx/performance_counters/parcels/gatherer.hpp>
 #include <hpx/util/high_resolution_timer.hpp>
@@ -58,12 +59,12 @@ namespace hpx { namespace parcelset { namespace ibverbs
             context_.close(ec);    // close the socket to give it back to the OS
         }
 
-        void set_parcel (parcel const& p)
+        bool set_parcel (parcel const& p)
         {
-            set_parcel(std::vector<parcel>(1, p));
+            return set_parcel(std::vector<parcel>(1, p));
         }
 
-        void set_parcel (std::vector<parcel> const& p);
+        bool set_parcel (std::vector<parcel> const& p);
 
         /// Get the window associated with the parcelport_connection.
         parcelset::ibverbs::client_context& context() { return context_; }
@@ -149,6 +150,9 @@ namespace hpx { namespace parcelset { namespace ibverbs
 
         // archive flags
         int archive_flags_;
+
+        // helper class for dis incref handling
+        util::detail::output_id_splitting manage_ids_;
     };
 
     typedef boost::shared_ptr<parcelport_connection> parcelport_connection_ptr;

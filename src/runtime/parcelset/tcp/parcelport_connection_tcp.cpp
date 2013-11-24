@@ -166,8 +166,10 @@ namespace hpx { namespace parcelset { namespace tcp
     }
 #endif
 
-    void parcelport_connection::set_parcel(std::vector<parcel> const& pv)
+    bool parcelport_connection::set_parcel(std::vector<parcel> const& pv)
     {
+        bool result = true;
+
 #if defined(HPX_TRACK_STATE_OF_OUTGOING_TCP_CONNECTION)
         state_ = state_set_parcel;
 #endif
@@ -191,6 +193,7 @@ namespace hpx { namespace parcelset { namespace tcp
             // clear and preallocate out_buffer_
             out_buffer_.clear();
             out_chunks_.clear();
+            manage_ids_.clear();
 
             BOOST_FOREACH(parcel const & p, pv)
             {
@@ -214,8 +217,8 @@ namespace hpx { namespace parcelset { namespace tcp
                     archive_flags |= util::enable_compression;
                 }
 
-                util::portable_binary_oarchive archive(
-                    out_buffer_, &out_chunks_, filter.get(), archive_flags);
+                util::portable_binary_oarchive archive(out_buffer_,
+                    manage_ids_, &out_chunks_, filter.get(), archive_flags);
 
 #if defined(HPX_HAVE_SECURITY)
                 std::set<boost::uint32_t> localities;
@@ -240,6 +243,10 @@ namespace hpx { namespace parcelset { namespace tcp
             if (!first_message_)
                 create_message_suffix(pv[0].get_parcel_id());
 #endif
+
+            // make sure all pending id-splitting operations are performed
+            result = manage_ids_.process();
+
             // store the time required for serialization
             send_data_.serialization_time_ = timer.elapsed_nanoseconds();
         }
@@ -252,7 +259,7 @@ namespace hpx { namespace parcelset { namespace tcp
                 boost::str(boost::format(
                     "parcelport: parcel serialization failed, caught "
                     "boost::archive::archive_exception: %s") % e.what()));
-            return;
+            return result;
         }
         catch (boost::system::system_error const& e) {
             HPX_THROW_EXCEPTION(serialization_error,
@@ -261,7 +268,7 @@ namespace hpx { namespace parcelset { namespace tcp
                     "parcelport: parcel serialization failed, caught "
                     "boost::system::system_error: %d (%s)") %
                         e.code().value() % e.code().message()));
-            return;
+            return result;
         }
         catch (std::exception const& e) {
             HPX_THROW_EXCEPTION(serialization_error,
@@ -269,7 +276,7 @@ namespace hpx { namespace parcelset { namespace tcp
                 boost::str(boost::format(
                     "parcelport: parcel serialization failed, caught "
                     "std::exception: %s") % e.what()));
-            return;
+            return result;
         }
 
         // make sure outgoing message is not larger than allowed
@@ -282,7 +289,7 @@ namespace hpx { namespace parcelset { namespace tcp
                     "than allowed (created: %ld, allowed: %ld), consider"
                     "configuring larger hpx.parcel.max_message_size") %
                         out_buffer_.size() % max_outbound_size_));
-            return;
+            return result;
         }
 
         out_priority_ = boost::integer::ulittle8_t(priority);
@@ -292,6 +299,8 @@ namespace hpx { namespace parcelset { namespace tcp
         send_data_.num_parcels_ = pv.size();
         send_data_.bytes_ = arg_size;
         send_data_.raw_bytes_ = out_buffer_.size();
+
+        return result;
     }
 }}}
 
