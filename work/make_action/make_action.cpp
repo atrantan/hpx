@@ -10,14 +10,13 @@
 #include <make_action/make_action.hpp>
 #include <hpx/include/lcos.hpp>
 
-constexpr auto a = hpx::make_action(
-  [](int x)->int
-  {
-/*   hpx::wait_images_sync("");*/
+
+int user_function(int x)
+{
     std::size_t here = hpx::get_locality_id();
     std::size_t numlocs = hpx::get_num_localities_sync();
 
-   std::cout <<"Welcome to locality "<< here <<" among "<< numlocs <<" localities"<<std::endl;
+    std::cout <<"Welcome to locality "<< here <<" among "<< numlocs <<" localities"<<std::endl;
 
     if( here == 0 )
     {
@@ -33,28 +32,53 @@ constexpr auto a = hpx::make_action(
         b.wait();
     }
 
-   return x + 1;
-  }
-);
+    return x + 1;
+}
+
+
+auto a_lambda = hpx::make_action([](int x)
+{
+    return user_function(x);
+});
+
+auto a_function = hpx::make_action(&user_function).with_constant<&user_function>();
 
 
 int main()
 {
     auto localities = hpx::find_all_localities();
 
-    std::vector< hpx::future<int> > join;
-
-    int i=0;
-
-    for (auto & l : localities)
     {
-        if ( l != hpx::find_here() )
-        join.push_back( hpx::async(a, l, i++) );
+        std::vector< hpx::future<int> > join;
+
+        int i=0;
+
+        for (auto & l : localities)
+        {
+            if ( l != hpx::find_here() )
+            join.push_back( hpx::async(a_lambda, l, i++) );
+        }
+
+        join.push_back( hpx::async( a_lambda, hpx::find_here(), i++) );
+
+        hpx::wait_all(join);
     }
 
-    join.push_back( hpx::async(a, hpx::find_here(), i++) );
+    {
+        std::vector< hpx::future<int> > join;
 
-    hpx::wait_all(join);
+        int i=0;
+
+        for (auto & l : localities)
+        {
+            if ( l != hpx::find_here() )
+            join.push_back( hpx::async(a_function, l, i++) );
+        }
+
+        join.push_back( hpx::async( a_function, hpx::find_here(), i++) );
+
+        hpx::wait_all(join);
+    }
 
     return 0;
 }

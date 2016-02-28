@@ -30,8 +30,8 @@ namespace hpx{
             }
         };
 
+        template<typename F, typename ReturnType, typename ... Args>
         struct caller{
-          template<typename F, typename ReturnType, typename ... Args>
           static inline ReturnType call(Args && ... args)
           {
              int * dummy = nullptr;
@@ -46,8 +46,8 @@ namespace hpx{
         template<class F, typename ReturnType, template <typename...> class T, typename ... Args>
         struct make_action_using_sequence< F, ReturnType, T<Args...> >
         {
-          using type = typename hpx::actions::make_direct_action<decltype(&caller::call<F,ReturnType,Args...>)
-                                                          ,&caller::call<F,ReturnType,Args...>
+          using type = typename hpx::actions::make_direct_action<decltype(&caller<F,ReturnType,Args...>::call)
+                                                          ,&caller<F,ReturnType,Args...>::call
                                                           >::type;
         };
 
@@ -80,24 +80,51 @@ namespace hpx{
           using type = typename make_action_using_sequence<F,return_type,sequence>::type;
         };
 
+        template<typename F, bool Condition = std::is_empty<F>::value >
         struct action_maker
+        {};
+
+        template<typename F>
+        struct action_maker<F,true>
         {
-            template<class F>
             constexpr typename action_from_lambda<F>::type operator += (F* f)
             {
-                static_assert( !std::is_assignable<F,F>() && std::is_empty<F>()
-                             ,"Lambda is required"
+                static_assert( !std::is_assignable<F,F>()
+                             ,"Lambda without capture list is required"
                             );
 
                 return typename action_from_lambda<F>::type();
             }
         };
+
+        template<typename F>
+        struct action_maker<F,false>
+        {
+            constexpr action_maker operator += (F* f)
+            {
+                static_assert( !std::is_assignable<F,F>()
+                             ,"Function is required"
+                            );
+
+                return *this;
+            }
+
+            template<F f>
+            constexpr typename hpx::actions::make_direct_action<F,f>::type
+            with_constant() const
+            {
+                return typename hpx::actions::make_direct_action<F,f>::type();
+            }
+        };
+
+
+
     }
 
     template< typename F>
-    constexpr auto make_action(F && f) -> decltype( hpx::detail::action_maker() += true ? nullptr : hpx::detail::addr_add() + f )
+    constexpr auto make_action(F && f) -> decltype( hpx::detail::action_maker<F>() += true ? nullptr : hpx::detail::addr_add() + f )
     {
-      return hpx::detail::action_maker() += true ? nullptr : hpx::detail::addr_add() + f;
+      return hpx::detail::action_maker<F>() += true ? nullptr : hpx::detail::addr_add() + f;
     }
 
 }
