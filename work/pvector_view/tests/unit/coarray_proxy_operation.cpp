@@ -84,12 +84,8 @@ constexpr auto image_coarray = hpx::make_action(
             }
         }
 
-    }).then([&](hpx::future<void>){
-
         block.barrier_sync("local_transpose");
-
-    })
-    .wait();
+    }).wait();
 
     // Test the result of the computation
     if(hpx::find_here() == localities[0])
