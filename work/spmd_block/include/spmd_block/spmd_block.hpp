@@ -92,7 +92,6 @@ namespace hpx { namespace server
             when().get();
         }
 
-        HPX_DEFINE_COMPONENT_DIRECT_ACTION(spmd_block, find_all_localities);
         HPX_DEFINE_COMPONENT_DIRECT_ACTION(spmd_block, wait);
 
     private:
@@ -103,17 +102,13 @@ namespace hpx { namespace server
 }}
 
 HPX_REGISTER_ACTION_DECLARATION(
-      hpx::server::spmd_block::find_all_localities_action
-    , spmd_block_find_all_localities_action
-    );
-HPX_REGISTER_ACTION_DECLARATION(
       hpx::server::spmd_block::wait_action
     , spmd_block_wait_action
     );
 
-namespace hpx { namespace parallel{
+namespace hpx { namespace detail{
 
-    class spmd_block
+    struct spmd_block
     : public components::client_base< spmd_block, server::spmd_block >
     {
     private:
@@ -140,17 +135,35 @@ namespace hpx { namespace parallel{
             return hpx::get_ptr< server::spmd_block >( this->get_id() ).get(ec);
         }
 
-        std::vector<hpx::id_type> find_all_localities_sync() const
+        void wait_sync() const
         {
-            return find_all_localities().get();
+            return wait().get();
         }
 
-        hpx::future< std::vector<hpx::id_type> > find_all_localities() const
+        hpx::future<void> wait() const
         {
             HPX_ASSERT(this->get_id());
-            return hpx::async<typename server_type::find_all_localities_action>(
-                this->get_id()
-                );
+            return hpx::async< typename server_type::wait_action >( this->get_id() );
+        }
+    };
+}}
+
+namespace hpx { namespace parallel{
+
+    struct spmd_block : public hpx::detail::spmd_block
+    {
+        using base_type = hpx::detail::spmd_block;
+
+        spmd_block(){}
+
+        spmd_block( std::vector<hpx::id_type> const & localities )
+        : localities_(localities), base_type( hpx::new_<base_type>( localities[0], localities ) )
+        {}
+
+
+        std::vector<hpx::id_type> find_all_localities() const
+        {
+            return localities_;
         }
 
         // Action submitted to a spmd_block must have one and only one parameter
@@ -158,7 +171,7 @@ namespace hpx { namespace parallel{
         template <typename Action, typename ... Args>
         void run(Action && a, Args && ... args)
         {
-            if( hpx::find_here() == find_all_localities_sync()[0] )
+            if( hpx::find_here() == localities_[0] )
             {
                 get_ptr()->run( std::forward<Action>(a), *this, std::forward<Args>(args)... );
             }
@@ -167,7 +180,7 @@ namespace hpx { namespace parallel{
         // return future representing the execution of all tasks
         hpx::future<void> when()
         {
-            if( hpx::find_here() == find_all_localities_sync()[0] )
+            if( hpx::find_here() == localities_[0] )
             {
                 return get_ptr()->when();
             }
@@ -180,16 +193,14 @@ namespace hpx { namespace parallel{
             barrier( std::move(bname) ).get();
         }
 
-
         hpx::future<void> barrier( std::string && bname )
         {
-            std::vector<hpx::id_type> localities = find_all_localities_sync();
-            std::size_t numlocs = localities.size();
+            std::size_t numlocs = localities_.size();
             hpx::id_type here = hpx::find_here();
 
             std::string barrier_name = bname + "_hpx_spmd_barrier";
 
-            if( here == localities[0] )
+            if( here == localities_[0] )
             {
                 // create the barrier, register it with AGAS
                 hpx::lcos::barrier b = hpx::new_<hpx::lcos::barrier>(here,numlocs);
@@ -208,22 +219,23 @@ namespace hpx { namespace parallel{
             }
         }
 
-        void wait_sync() const
-        {
-            return wait().get();
-        }
+    private:
+        std::vector< hpx::id_type > localities_;
 
-        hpx::future<void> wait() const
+    private:
+        friend class hpx::serialization::access;
+
+        template <typename Archive>
+        void serialize(Archive& ar, unsigned)
         {
-            HPX_ASSERT(this->get_id());
-            return hpx::async< typename server_type::wait_action >( this->get_id() );
+            ar & localities_;
         }
     };
 
     template <typename Action, typename ... Args>
     hpx::future<void> define_spmd_block(std::vector<hpx::id_type> const & localities, Action && a, Args && ... args)
     {
-        spmd_block block = hpx::new_<spmd_block>( localities[0], localities );
+        spmd_block block(localities);
 
         block.run( std::forward<Action>(a), std::forward<Args>(args)... );
 

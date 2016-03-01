@@ -308,7 +308,7 @@ namespace hpx {
 
             bool is_automatic_size = ( *(codimensions.end() -1) == hpx::_ );
 
-            std::vector< hpx::id_type > localities = block.find_all_localities_sync();
+            std::vector< hpx::id_type > localities = block.find_all_localities();
 
             if ( hpx::find_here() == localities[0] )
             {

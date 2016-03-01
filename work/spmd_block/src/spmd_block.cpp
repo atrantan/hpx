@@ -12,10 +12,6 @@ HPX_REGISTER_COMPONENT_MODULE();
 HPX_REGISTER_COMPONENT(hpx::components::component< hpx::server::spmd_block >, spmd_block);
 
 HPX_REGISTER_ACTION(
-      hpx::server::spmd_block::find_all_localities_action
-    , spmd_block_find_all_localities_action
-    );
-HPX_REGISTER_ACTION(
       hpx::server::spmd_block::wait_action
     , spmd_block_wait_action
     );
