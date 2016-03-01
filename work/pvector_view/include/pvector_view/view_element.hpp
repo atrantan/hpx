@@ -115,7 +115,8 @@ namespace hpx { namespace detail {
 
     // Stencil interfaces
         template<typename ... I>
-        auto get_boundary( I ... index )
+        hpx::detail::view_element_boundary<T,Stencil>
+        get_boundary( I ... index )
         {
             return  hpx::detail::view_element_boundary<T,Stencil>
                     ( std::move(it_)
