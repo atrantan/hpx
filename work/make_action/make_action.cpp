@@ -10,6 +10,7 @@
 #include <make_action/make_action.hpp>
 #include <hpx/include/lcos.hpp>
 
+#include <type_traits>
 
 int user_function(int x)
 {
@@ -41,7 +42,7 @@ auto a_lambda = hpx::make_action([](int x)
     return user_function(x);
 });
 
-auto a_function = hpx::make_action(&user_function).with_constant<&user_function>();
+auto a_function = hpx::make_action( std::integral_constant<int(*)(int),&user_function>() );
 
 
 int main()

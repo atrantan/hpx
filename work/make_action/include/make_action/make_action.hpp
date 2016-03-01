@@ -80,16 +80,12 @@ namespace hpx{
           using type = typename make_action_using_sequence<F,return_type,sequence>::type;
         };
 
-        template<typename F, bool Condition = std::is_empty<F>::value >
-        struct action_maker
-        {};
-
         template<typename F>
-        struct action_maker<F,true>
+        struct action_maker
         {
             constexpr typename action_from_lambda<F>::type operator += (F* f)
             {
-                static_assert( !std::is_assignable<F,F>()
+                static_assert( !std::is_assignable<F,F>::value && std::is_empty<F>::value
                              ,"Lambda without capture list is required"
                             );
 
@@ -97,23 +93,18 @@ namespace hpx{
             }
         };
 
-        template<typename F>
-        struct action_maker<F,false>
+
+        template<typename F, F f>
+        struct action_maker< std::integral_constant<F,f> >
         {
-            constexpr action_maker operator += (F* f)
+            template< typename Dummy>
+            constexpr typename hpx::actions::make_direct_action<F,f>::type operator += (Dummy)
             {
-                static_assert( !std::is_assignable<F,F>()
+                static_assert( !std::is_assignable<F,F>::value && !std::is_empty<F>::value
                              ,"Function is required"
                             );
 
-                return *this;
-            }
-
-            template<F f>
-            constexpr typename hpx::actions::make_direct_action<F,f>::type
-            with_constant() const
-            {
-                return typename hpx::actions::make_direct_action<F,f>::type();
+                return typename hpx::actions::make_direct_action<F,f>::type();;
             }
         };
 
@@ -121,11 +112,11 @@ namespace hpx{
 
     }
 
-    template< typename F>
-    constexpr auto make_action(F && f) -> decltype( hpx::detail::action_maker<F>() += true ? nullptr : hpx::detail::addr_add() + f )
-    {
-      return hpx::detail::action_maker<F>() += true ? nullptr : hpx::detail::addr_add() + f;
-    }
+  template< typename F>
+  constexpr auto make_action(F && f) -> decltype( hpx::detail::action_maker<F>() += true ? nullptr : hpx::detail::addr_add() + f )
+  {
+    return hpx::detail::action_maker<F>() += true ? nullptr : hpx::detail::addr_add() + f;
+  }
 
 }
 
