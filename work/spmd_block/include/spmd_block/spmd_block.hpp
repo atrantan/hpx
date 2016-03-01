@@ -57,8 +57,8 @@ namespace hpx { namespace server
             return hpx::make_ready_future();
         }
 
-        // Action submitted to a spmd_block must have one and only one parameter
-        // of type spmd_block
+        // Action submitted to a spmd_block must have at least one parameter
+        // and the first parameter must be a spmd_block
 
         template <typename Action, typename Client, typename ... Args>
         void run(Action && a, Client const & client, Args && ... args)
