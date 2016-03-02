@@ -81,22 +81,26 @@ boost::uint64_t transpose_coarray(  hpx::parallel::spmd_block & block
             }
 
             block.barrier("transpose" + iter)
-            .then([&](hpx::future<void> f1){ f1.get();
-
-                // Inner Transpose operation
-                for ( auto & v : hpx::local_view(out) )
+            .then(
+                [&](hpx::future<void> f1)
                 {
-                    for (std::size_t j = 0; j<local_width;  j++)
-                    for (std::size_t i = 0; i<local_height; i++)
-                    {
-                        std::swap( v[j + i*local_leading_dimension]
-                                 , v[i + j*local_leading_dimension]
-                                 );
-                    }
-                }
+                    f1.get();
 
-                block.barrier_sync("local_transpose" + iter);
-            }).wait();
+                    // Inner Transpose operation
+                    for ( auto & v : hpx::local_view(out) )
+                    {
+                        for (std::size_t j = 0; j<local_width;  j++)
+                        for (std::size_t i = 0; i<local_height; i++)
+                        {
+                            std::swap( v[j + i*local_leading_dimension]
+                                     , v[i + j*local_leading_dimension]
+                                     );
+                        }
+                    }
+
+                    return block.barrier("local_transpose" + iter);
+                 }
+            ).wait();
 
         }
         time.push_back( hpx::util::high_resolution_clock::now() - start );

@@ -58,34 +58,42 @@ constexpr auto image_coarray = hpx::make_action(
         }
     }
 
-    block.barrier_sync("init");
-
-    // Outer Transpose operation
-    for (std::size_t j = 0; j<width; j++)
-    for (std::size_t i = 0; i<height; i++)
-    {
-        // Put operation
-        out(j,i) = in(i,j);
-    }
-
-    block.barrier("transpose")
-    .then([&](hpx::future<void> f1){ f1.get();
-
-        // Inner Transpose operation
-        for ( auto & v : hpx::local_view(out) )
+    block.barrier("init")
+    .then(
+        [&](hpx::future<void> f1) -> hpx::future<void>
         {
-            for (std::size_t j = 0; j<local_width;  j++)
-            for (std::size_t i = 0; i<local_height; i++)
+            f1.get();
+            // Outer Transpose operation
+            for (std::size_t j = 0; j<width; j++)
+            for (std::size_t i = 0; i<height; i++)
             {
                 // Put operation
-                std::swap( v[j + i*local_leading_dimension]
-                         , v[i + j*local_leading_dimension]
-                         );
+                out(j,i) = in(i,j);
             }
-        }
 
-        block.barrier_sync("local_transpose");
-    }).wait();
+            return block.barrier("transpose");
+         }
+    )
+    .then(
+        [&](hpx::future<void> f1) -> hpx::future<void>
+        {
+            f1.get();
+            // Inner Transpose operation
+            for ( auto & v : hpx::local_view(out) )
+            {
+                for (std::size_t j = 0; j<local_width;  j++)
+                for (std::size_t i = 0; i<local_height; i++)
+                {
+                    // Put operation
+                    std::swap( v[j + i*local_leading_dimension]
+                             , v[i + j*local_leading_dimension]
+                             );
+                }
+            }
+
+            return block.barrier("local_transpose");
+        }
+    ).wait();
 
     // Test the result of the computation
     if(hpx::find_here() == localities[0])
