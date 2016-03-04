@@ -84,6 +84,7 @@ boost::uint64_t transpose_coarray(  hpx::parallel::spmd_block & block
             .then(
                 [&](hpx::future<void> f1)
                 {
+
                     f1.get();
 
                     // Inner Transpose operation
@@ -124,9 +125,15 @@ void image_coarray( hpx::parallel::spmd_block block
     hpx::coarray<double,2> out( block, "out", {height,width}, hpx::partition<double>(partition_size) );
     hpx::coarray<double,2> in ( block, "in",  {height,width}, hpx::partition<double>(partition_size) );
 
-    hpx::cout << "hpx::coarray<double>: "
-        << double(seq_ref)/transpose_coarray(block, out, in, height, width, local_height, local_width, local_leading_dimension, test_count)
-        << "\n";
+    // hpx::cout << "hpx::coarray<double>: "
+    //     << double(seq_ref)/transpose_coarray(block, out, in, height, width, local_height, local_width, local_leading_dimension, test_count)
+    //     << "\n";
+
+    std::size_t size = height*width*local_height*local_width*sizeof(double);
+
+    hpx::cout << "performances : "
+    << double(size)/transpose_coarray(block, out, in, height, width, local_height, local_width, local_leading_dimension, test_count)
+    << " GB/s\n";
 }
 HPX_DEFINE_PLAIN_ACTION(image_coarray);
 
@@ -185,16 +192,16 @@ int main(int argc, char* argv[])
 
     cmdline.add_options()
         ("matrix_order"
-        , boost::program_options::value<std::size_t>()->default_value(1000)
-        , "order of matrix (default: 1000)")
+        , boost::program_options::value<std::size_t>()->default_value(8000)
+        , "order of matrix (default: 40)")
 
         ("partition_order"
-        , boost::program_options::value<std::size_t>()->default_value(100)
-        , "order of partition (default: 100)")
+        , boost::program_options::value<std::size_t>()->default_value(800)
+        , "order of partition (default: 10)")
 
         ("test_count"
-        , boost::program_options::value<int>()->default_value(10) // for overall time of 10 ms
-        , "number of tests to be averaged (default: 10)")
+        , boost::program_options::value<int>()->default_value(5) // for overall time of 10 ms
+        , "number of tests to be averaged (default: 5)")
         ;
 
     return hpx::init(cmdline, argc, argv, cfg);

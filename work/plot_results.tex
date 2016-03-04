@@ -1,0 +1,90 @@
+\documentclass[svgnames]{beamer}
+\usepackage{listings}
+\usepackage[utf8x]{inputenc}
+\usepackage{color}
+\usepackage{xcolor}
+\usepackage[frenchb,english]{babel}
+\usepackage{standalone}
+\usepackage{tikz}
+\usepackage{pgfplots}
+
+\pgfplotsset{compat=1.11}
+
+\definecolor{metared}{rgb}{0.64,0.13,0.11}
+\definecolor{hlcolor}{rgb}{0.88,0.88,0.88}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{ %
+  language=C++,                % the language of the code
+  basicstyle=\ttfamily\tiny,           % the size of the fonts that are used for the code
+  showspaces=false,               % show spaces adding particular underscores
+  showstringspaces=false,         % underline spaces within strings
+  showtabs=false,                 % show tabs within strings adding particular underscores
+  frame=none,                     % adds a frame around the code
+  tabsize=2,                      % sets default tabsize to 2 spaces
+  captionpos=b,                   % sets the caption-position to bottom
+  breaklines=true,                % sets automatic line breaking
+  breakatwhitespace=false,        % sets if automatic breaks should only happen at whitespace
+  xleftmargin=\fboxsep,
+  xrightmargin=-\fboxsep,
+  firstnumber=1,
+  title=\lstname,                   % show the filename of files included with \lstinputlisting;
+  keywordstyle=\color{blue},          % keyword style
+  commentstyle=\color{dkgreen},       % comment style
+  % stringstyle=\color{mauve},         % string literal style
+  escapeinside={\%*}{*)},            % if you want to add a comment within your code
+  morekeywords={*,...},               % if you want to add more keywords to the set
+  escapechar={@},
+  aboveskip=0bp,
+  belowskip=0bp
+}
+
+\title{Extending C++ with Co-Array semantics}
+\author{Antoine Tran Tan \and Hartmut Kaiser}
+\institute{Louisiana State University\\Center for Computation and Technology - Stellar Group}
+\date{\footnotesize{May 2016}}
+
+\begin{document}
+
+%=============================================
+\begin{frame}
+\titlepage
+\end{frame}
+%=============================================
+\begin{frame}
+\frametitle{Matrix Transpose - Performance evaluation}
+\begin{center}
+\begin{tikzpicture}[scale = 0.9]
+\pgfplotsset{grid style={dotted,gray}}
+\begin{axis}[xlabel=\footnotesize Number of MPI processes,
+            ylabel=\footnotesize Performance in Gb/s,grid,
+            legend pos=north west]
+  \addplot[color=black]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=2000_partition_order=200_scale_over_nprocs.dat};
+  \addlegendentry{\scriptsize{matrix order = 2000, partition order = 200}}
+  \addplot[color=blue]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=4000_partition_order=400_scale_over_nprocs.dat};
+  \addlegendentry{\scriptsize{matrix order = 4000, partition order = 400}}
+  \addplot[color=red]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=6000_partition_order=600_scale_over_nprocs.dat};
+  \addlegendentry{\scriptsize{matrix order = 6000, partition order = 600}}
+  \addplot[color=red]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=8000_partition_order=800_scale_over_nprocs.dat};
+  \addlegendentry{\scriptsize{matrix order = 8000, partition order = 800}}
+  \addplot[color=dkgreen]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=10000_partition_order=1000_scale_over_nprocs.dat};
+  \addlegendentry{\scriptsize{matrix order = 10000, partition order = 1000}}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+\end{frame}
+%=============================================
+\end{document}

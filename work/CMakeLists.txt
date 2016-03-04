@@ -25,9 +25,16 @@ include_directories(spmd_block/include)
 
 # Add programs here
 add_subdirectory(spmd_block)
-# add_subdirectory(pvector_view)
+add_subdirectory(pvector_view)
 # add_subdirectory(make_action)
 # add_subdirectory(wait_images)
 # add_subdirectory(stencil_view)
+
+add_custom_target(
+    run_tests_and_plot_results
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    COMMAND python ${CMAKE_SOURCE_DIR}/run.py
+    COMMAND pdflatex ${CMAKE_SOURCE_DIR}/plot_results.tex
+)
 
 endif()
