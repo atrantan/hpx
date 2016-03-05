@@ -135,8 +135,8 @@ namespace hpx { namespace parallel{
             return localities_;
         }
 
-        // Action submitted to a spmd_block must have one and only one parameter
-        // of type spmd_block
+        // Action submitted to a spmd_block must have at least one parameter
+        // and the first parameter must be a spmd_block
         template <typename Action, typename ... Args>
         void run(Action && a, Args && ... args)
         {
