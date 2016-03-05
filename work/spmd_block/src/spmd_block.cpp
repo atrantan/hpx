@@ -8,10 +8,4 @@
 #include <hpx/include/components.hpp>
 
 HPX_REGISTER_COMPONENT_MODULE();
-
 HPX_REGISTER_COMPONENT(hpx::components::component< hpx::server::spmd_block >, spmd_block);
-
-HPX_REGISTER_ACTION(
-      hpx::server::spmd_block::wait_action
-    , spmd_block_wait_action
-    );

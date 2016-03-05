@@ -13,6 +13,7 @@
 
 void bsp3(hpx::parallel::spmd_block block)
 {
+  std::cout<<"Enter in BSP 3"<<std::endl;
 
 }
 HPX_DEFINE_PLAIN_ACTION(bsp3);
@@ -20,6 +21,8 @@ HPX_DEFINE_PLAIN_ACTION(bsp3);
 
 void bsp2(hpx::parallel::spmd_block block)
 {
+    std::cout<<"Enter in BSP 2"<<std::endl;
+
     bsp3_action act3;
     block.run(act3);             // potential concurrency in queuing
 }
@@ -28,14 +31,13 @@ HPX_DEFINE_PLAIN_ACTION(bsp2);
 
 void bsp1(hpx::parallel::spmd_block block)
 {
+    std::cout<<"Enter in BSP 1"<<std::endl;
+
     bsp2_action act2;
     block.run(act2);                       // master dispatch actions
 
     bsp3_action act3;
     block.run(act3);            // potential concurrency in queuing
-
-    block.barrier_sync("");
-
 }
 HPX_DEFINE_PLAIN_ACTION(bsp1);
 
@@ -46,8 +48,7 @@ int main()
 
     auto localities = hpx::find_all_localities();
 
-    hpx::future<void> f = hpx::parallel::define_spmd_block( localities, act1 );
-    f.get();
+    hpx::parallel::define_spmd_block(localities, act1 );
 
     std::cout<<"all is done"<<std::endl;
 

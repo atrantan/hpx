@@ -25,7 +25,7 @@ include_directories(spmd_block/include)
 
 # Add programs here
 add_subdirectory(spmd_block)
-add_subdirectory(pvector_view)
+# add_subdirectory(pvector_view)
 # add_subdirectory(make_action)
 # add_subdirectory(wait_images)
 # add_subdirectory(stencil_view)
