@@ -206,13 +206,13 @@ namespace hpx { namespace parallel{
     };
 
     template <typename Action, typename ... Args>
-    void define_spmd_block(std::vector<hpx::id_type> const & localities, Action && a, Args && ... args)
+    hpx::future<void> define_spmd_block(std::vector<hpx::id_type> const & localities, Action && a, Args && ... args)
     {
         spmd_block block(localities);
 
         block.run( std::forward<Action>(a), std::forward<Args>(args)... );
 
-        return block.wait();
+        return block.when();
     }
 
 

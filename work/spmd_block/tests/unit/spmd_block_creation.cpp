@@ -48,7 +48,7 @@ int main()
 
     auto localities = hpx::find_all_localities();
 
-    hpx::parallel::define_spmd_block(localities, act1 );
+    hpx::parallel::define_spmd_block(localities, act1 ).get();
 
     std::cout<<"all is done"<<std::endl;
 
