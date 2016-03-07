@@ -9,6 +9,7 @@ cmake_minimum_required(VERSION 2.8.4 FATAL_ERROR)
 set(tests
     # pvector_view_foreach
     pvector_view_transpose
+    pvector_view_transpose_with_tasks
    )
 
 foreach(test ${tests})
