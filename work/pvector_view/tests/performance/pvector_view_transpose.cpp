@@ -192,11 +192,11 @@ int main(int argc, char* argv[])
 
     cmdline.add_options()
         ("matrix_order"
-        , boost::program_options::value<std::size_t>()->default_value(8000)
+        , boost::program_options::value<std::size_t>()->default_value(20000)
         , "order of matrix (default: 40)")
 
         ("partition_order"
-        , boost::program_options::value<std::size_t>()->default_value(800)
+        , boost::program_options::value<std::size_t>()->default_value(1000)
         , "order of partition (default: 10)")
 
         ("test_count"
@@ -206,4 +206,3 @@ int main(int argc, char* argv[])
 
     return hpx::init(cmdline, argc, argv, cfg);
 }
-

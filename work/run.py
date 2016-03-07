@@ -65,9 +65,9 @@ def plot_scalability(apps, title,  xlabel, xlabel_range, ylabel, ylabel_range, z
 				datafile.write("\n")
 	        datafile.close();
 
-nprocs = ['1', '2', '4', '6', '8', '10','12','14','16']
-matrix_order = ['2000', '4000', '6000', '8000', '10000']
-partition_order = ['200', '400', '600', '800', '1000']
+nprocs = ['1', '2', '4', '6', '8', '10','12','14', '16']
+matrix_order = ['10000', '14000', '18000', '22000']
+partition_order = ['1000', '1400', '1800', '2200']
 
 #create lu hpx dump directory
 dumpdir = 'perfs/pvector_view_transpose'

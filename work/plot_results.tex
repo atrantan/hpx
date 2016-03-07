@@ -58,30 +58,32 @@
 \frametitle{Matrix Transpose - Performance evaluation}
 \begin{center}
 \begin{tikzpicture}[scale = 0.9]
-\pgfplotsset{grid style={dotted,gray}}
+\pgfplotsset{grid style={thick,dashed,gray}}
+\pgfplotsset{minor grid style={dotted,gray}}
 \begin{axis}[xlabel=\footnotesize Number of MPI processes,
-            ylabel=\footnotesize Performance in Gb/s,grid,
-            legend pos=north west]
+             ylabel=\footnotesize Performance in Gb/s,
+             grid=both,
+             minor tick num=1,
+             ymin=0,
+             ymax = 1.75,
+             xmin = 0,
+             legend pos=south east]
   \addplot[color=black]
   plot[smooth,mark=diamond*,mark size=1.5pt] file
-  {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=2000_partition_order=200_scale_over_nprocs.dat};
-  \addlegendentry{\scriptsize{matrix order = 2000, partition order = 200}}
+  {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=10000_partition_order=1000_scale_over_nprocs.dat};
+  \addlegendentry{\tiny{matrix order=10000, partition order=1000}}
   \addplot[color=blue]
   plot[smooth,mark=diamond*,mark size=1.5pt] file
-  {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=4000_partition_order=400_scale_over_nprocs.dat};
-  \addlegendentry{\scriptsize{matrix order = 4000, partition order = 400}}
+  {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=14000_partition_order=1400_scale_over_nprocs.dat};
+  \addlegendentry{\tiny{matrix order=14000, partition order=1400}}
   \addplot[color=red]
   plot[smooth,mark=diamond*,mark size=1.5pt] file
-  {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=6000_partition_order=600_scale_over_nprocs.dat};
-  \addlegendentry{\scriptsize{matrix order = 6000, partition order = 600}}
-  \addplot[color=red]
-  plot[smooth,mark=diamond*,mark size=1.5pt] file
-  {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=8000_partition_order=800_scale_over_nprocs.dat};
-  \addlegendentry{\scriptsize{matrix order = 8000, partition order = 800}}
+  {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=18000_partition_order=1800_scale_over_nprocs.dat};
+  \addlegendentry{\tiny{matrix order=18000, partition order=1800}}
   \addplot[color=dkgreen]
   plot[smooth,mark=diamond*,mark size=1.5pt] file
-  {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=10000_partition_order=1000_scale_over_nprocs.dat};
-  \addlegendentry{\scriptsize{matrix order = 10000, partition order = 1000}}
+  {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=22000_partition_order=2200_scale_over_nprocs.dat};
+  \addlegendentry{\tiny{matrix order=22000, partition order=2200}}
 \end{axis}
 \end{tikzpicture}
 \end{center}
