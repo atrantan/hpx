@@ -90,11 +90,11 @@ boost::uint64_t transpose_coarray(  hpx::parallel::spmd_block & block
                     // Inner Transpose operation
                     for ( auto & v : hpx::local_view(out) )
                     {
-                        for (std::size_t j = 0; j<local_width;  j++)
-                        for (std::size_t i = 0; i<local_height; i++)
+                        for (std::size_t jj = 0; jj<local_width-1;  jj++)
+                        for (std::size_t ii = jj+1; ii<local_height; ii++)
                         {
-                            std::swap( v[j + i*local_leading_dimension]
-                                     , v[i + j*local_leading_dimension]
+                            std::swap( v[jj + ii*local_leading_dimension]
+                                     , v[ii + jj*local_leading_dimension]
                                      );
                         }
                     }

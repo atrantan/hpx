@@ -92,7 +92,7 @@ boost::uint64_t transpose_coarray(  hpx::parallel::spmd_block & block
             hpx::when_all( join )
             .then
             (
-                [&block,iter](auto when_all_future)
+                [&block,iter]( hpx::future<std::vector< hpx::future<void> >> when_all_future)
                 {
                     when_all_future.get();
                     return block.barrier("transpose" + iter);
@@ -118,8 +118,8 @@ boost::uint64_t transpose_coarray(  hpx::parallel::spmd_block & block
                                                 {
                                                     auto & v = out(i,j).data();
 
-                                                    for (std::size_t jj = 0; jj<local_width;  jj++)
-                                                    for (std::size_t ii = 0; ii<local_height; ii++)
+                                                    for (std::size_t jj = 0; jj<local_width-1;  jj++)
+                                                    for (std::size_t ii = jj+1; ii<local_height; ii++)
                                                     {
                                                         std::swap( v[jj + ii*local_leading_dimension]
                                                                  , v[ii + jj*local_leading_dimension]
@@ -137,7 +137,7 @@ boost::uint64_t transpose_coarray(  hpx::parallel::spmd_block & block
             )
             .then
             (
-                [&block,iter](auto when_all_future)
+                [&block,iter](hpx::future<std::vector< hpx::future<void> >> when_all_future)
                 {
                     when_all_future.get();
                     return block.barrier("local_transpose" + iter);
