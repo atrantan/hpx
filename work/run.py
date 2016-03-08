@@ -45,7 +45,7 @@ def valid_line(f, col):
 def plot_scalability(apps, title,  xlabel, xlabel_range, ylabel, ylabel_range, zlabel, zlabel_range, dump_file_format):
 	for app in apps:
 		for i in range(0, len(ylabel_range)):
-			datafile_n = "perfs/{0}/{0}_{1}={2}_{3}={4}_scale_over_{5}.dat".format(apps[0], ylabel, ylabel_range[i], zlabel, zlabel_range[i], xlabel)
+			datafile_n = "perfs/{0}/{0}_{1}={2}_{3}={4}_scale_over_{5}.dat".format(app, ylabel, ylabel_range[i], zlabel, zlabel_range[i], xlabel)
 			datafile = open(datafile_n, 'w')
 			for x in xlabel_range:
 				datafile.write("{0}".format(x))
@@ -65,21 +65,20 @@ def plot_scalability(apps, title,  xlabel, xlabel_range, ylabel, ylabel_range, z
 				datafile.write("\n")
 	        datafile.close();
 
-nprocs = ['1', '2', '4', '6', '8', '10','12','14', '16']
+ncores = ['1', '2', '4', '6', '8', '10','12','14', '16']
 matrix_order = ['10000', '14000', '18000', '22000']
-partition_order = ['1000', '1400', '1800', '2200']
+partition_order = ['500', '700', '900', '1100']
 
-#create lu hpx dump directory
+#create mpi dump directory
 dumpdir = 'perfs/pvector_view_transpose'
 if not os.path.exists(dumpdir):
  	print "creating "+dumpdir+" directory"
  	os.makedirs(dumpdir)
 
-#hpx version
-for n in nprocs:
-	# numaoptions = numaline(int(n))
+#mpi version
+for n in ncores:
 	for i in range(0, len(matrix_order)):
-		dumpfile = dumpdir+"/pvector_view_transpose_matrix_order={0}_partition_order={1}_nprocs={2}.dump".format(matrix_order[i], partition_order[i], n)
+		dumpfile = dumpdir+"/pvector_view_transpose_matrix_order={0}_partition_order={1}_ncores={2}.dump".format(matrix_order[i], partition_order[i], n)
 
 		cmdline = "mpirun -np "+n+" ./bin/pvector_view_transpose_test -t 1 --matrix_order {0} --partition_order {1} > {2}".format(
 		  matrix_order[i]
@@ -89,10 +88,30 @@ for n in nprocs:
 		print cmdline
 		os.system(cmdline)
 
+#create hpx dump directory
+dumpdir = 'perfs/pvector_view_transpose_with_tasks'
+if not os.path.exists(dumpdir):
+	print "creating "+dumpdir+" directory"
+	os.makedirs(dumpdir)
 
-plot_scalability(["pvector_view_transpose"], "Scalability of lu hpx version"
-	            , "nprocs", nprocs
+
+#hpx version
+for n in ncores:
+	for i in range(0, len(matrix_order)):
+		dumpfile = dumpdir+"/pvector_view_transpose_with_tasks_matrix_order={0}_partition_order={1}_ncores={2}.dump".format(matrix_order[i], partition_order[i], n)
+
+		cmdline = numaline(int(n)) +"./bin/pvector_view_transpose_with_tasks_test -t "+n+" --matrix_order {0} --partition_order {1} > {2}".format(
+		  matrix_order[i]
+		, partition_order[i]
+		, dumpfile
+		)
+		print cmdline
+		os.system(cmdline)
+
+
+plot_scalability(["pvector_view_transpose","pvector_view_transpose_with_tasks"], "Scalability of transpose with co-array"
+	            , "ncores", ncores
 				, "matrix_order", matrix_order
 				, "partition_order", partition_order
-				, "matrix_order=#1_partition_order=#2_nprocs=#0"
+				, "matrix_order=#1_partition_order=#2_ncores=#0"
 				)
