@@ -177,9 +177,17 @@ namespace hpx { namespace parallel{
             }
         }
 
-        void wait() const
+        hpx::future<void> wait(std::string && bname) const
         {
-            return when().get();
+            spmd_block const & block (*this);
+
+            return when().then(
+                [bname,block](hpx::future<void> f)
+                {
+                    f.get();
+                    block.barrier( std::string(bname) );
+                }
+            );
         }
 
         hpx::future<void> when() const

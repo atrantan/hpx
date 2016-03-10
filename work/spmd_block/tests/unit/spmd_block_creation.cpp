@@ -38,6 +38,8 @@ void bsp1(hpx::parallel::spmd_block block)
 
     bsp3_action act3;
     block.run(act3);            // potential concurrency in queuing
+
+    block.wait("").get();
 }
 HPX_DEFINE_PLAIN_ACTION(bsp1);
 
