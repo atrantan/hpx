@@ -129,7 +129,7 @@ void image_coarray( hpx::parallel::spmd_block block
     //     << double(seq_ref)/transpose_coarray(block, out, in, height, width, local_height, local_width, local_leading_dimension, test_count)
     //     << "\n";
 
-    std::size_t size = height*width*local_height*local_width*sizeof(double);
+    std::size_t size = 2*height*width*local_height*local_width*sizeof(double);
 
     hpx::cout << "performances : "
     << double(size)/transpose_coarray(block, out, in, height, width, local_height, local_width, local_leading_dimension, test_count)
