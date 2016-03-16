@@ -75,7 +75,7 @@ if not os.path.exists(dumpdir):
  	print "creating "+dumpdir+" directory"
  	os.makedirs(dumpdir)
 
-#mpi version
+#hpx actions version
 for n in ncores:
 	for i in range(0, len(matrix_order)):
 		dumpfile = dumpdir+"/pvector_view_transpose_matrix_order={0}_partition_order={1}_ncores={2}.dump".format(matrix_order[i], partition_order[i], n)
@@ -95,7 +95,7 @@ if not os.path.exists(dumpdir):
 	os.makedirs(dumpdir)
 
 
-#hpx version
+#hpx tasks version
 for n in ncores:
 	for i in range(0, len(matrix_order)):
 		dumpfile = dumpdir+"/pvector_view_transpose_with_tasks_matrix_order={0}_partition_order={1}_ncores={2}.dump".format(matrix_order[i], partition_order[i], n)
@@ -107,7 +107,6 @@ for n in ncores:
 		)
 		print cmdline
 		os.system(cmdline)
-
 
 plot_scalability(["pvector_view_transpose","pvector_view_transpose_with_tasks"], "Scalability of transpose with co-array"
 	            , "ncores", ncores
