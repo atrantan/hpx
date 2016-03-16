@@ -337,12 +337,6 @@ namespace hpx {
             else
                 vector_.connect_to_sync(name + "_hpx_coarray");
 
-            hpx::id_type here = hpx::find_here();
-            auto l_it = localities.begin(); auto l_end = localities.end();
-
-            std::size_t rank = 0;
-            while( *l_it != here && l_it != l_end ) { l_it++; rank++;}
-
             view = base_type( vector_.begin()
                             , vector_.end()
                             , std::forward<list_type>(codimensions)
@@ -350,7 +344,7 @@ namespace hpx {
                             , is_automatic_size
                             , std::forward<stencil_type>(stencil)
                             , localities.size()
-                            , rank
+                            , block.rank()
                             );
         }
 

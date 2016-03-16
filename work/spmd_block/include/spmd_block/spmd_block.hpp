@@ -137,8 +137,13 @@ namespace hpx { namespace parallel{
 
         int rank() const
         {
+            using const_iterator = typename std::vector<hpx::id_type>::const_iterator;
+
             std::size_t rank = 0;
-            auto l_it = localities_.cbegin(); auto l_end = localities_.cend();
+            const_iterator l_it = localities_.cbegin();
+            const_iterator l_end = localities_.cend();
+            hpx::id_type here = hpx::find_here();
+
             while( *l_it != here && l_it != l_end ) { l_it++; rank++;}
             return rank;
         }
