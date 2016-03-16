@@ -113,6 +113,17 @@ namespace hpx { namespace detail {
             }
         }
 
+        T operator[](std::size_t i) const
+        {
+            if( is_data_here() )
+            {
+                return data()[i];
+            }
+
+            else
+                return this->get_value_sync(i);
+        }
+
     // Stencil interfaces
         template<typename ... I>
         hpx::detail::view_element_boundary<T,Stencil>

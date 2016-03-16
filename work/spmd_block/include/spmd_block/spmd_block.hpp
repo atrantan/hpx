@@ -135,6 +135,14 @@ namespace hpx { namespace parallel{
             return localities_;
         }
 
+        int rank() const
+        {
+            std::size_t rank = 0;
+            auto l_it = localities_.cbegin(); auto l_end = localities_.cend();
+            while( *l_it != here && l_it != l_end ) { l_it++; rank++;}
+            return rank;
+        }
+
         // Action submitted to a spmd_block must have at least one parameter
         // and the first parameter must be a spmd_block
         template <typename Action, typename ... Args>
