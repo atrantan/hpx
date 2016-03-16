@@ -10,7 +10,9 @@
 #include <vector>
 #include <initializer_list>
 
+#include <hpx/components/containers/partitioned_vector/partitioned_vector.hpp>
 #include <hpx/components/containers/partitioned_vector/partitioned_vector_segmented_iterator.hpp>
+#include <hpx/components/containers/container_distribution_policy.hpp>
 #include <hpx/runtime/serialization/serialize.hpp>
 
 #include <pvector_view/get_unrolled_localities.hpp>
