@@ -237,7 +237,7 @@ namespace hpx {
     //                         ex2: this->operator()(1,2,3) = this->operator()(3,4,5);
     //                         )
         template<typename... I>
-        hpx::detail::view_element<T,stencil_type> operator()(I... index)
+        hpx::detail::view_element<T,stencil_type> operator()(I... index) const
         {
             using last_element = typename hpx::detail::last_element< I... >::type;
             using condition = typename std::is_same<last_element,detail::auto_subscript>;
