@@ -7,6 +7,8 @@
 #if !defined(MEDIAN_HPP)
 #define MEDIAN_HPP
 
+#include <algorithm>
+
 namespace hpx {  namespace detail {
 
     template<class RandAccessIter>

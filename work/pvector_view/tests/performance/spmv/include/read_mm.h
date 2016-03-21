@@ -2,6 +2,7 @@
 #define READ_MM_H
 
 #include <iostream>
+#include <vector>
 #include <mmio.h>
 
 void coo_to_csr(int n_row, int n_col, int nnz,
