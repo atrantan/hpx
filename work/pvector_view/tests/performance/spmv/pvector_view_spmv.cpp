@@ -1,12 +1,20 @@
-#include <hpx/hpx_init.hpp>
 #include <hpx/hpx.hpp>
+#include <hpx/util/high_resolution_clock.hpp>
+#include <hpx/include/iostreams.hpp>
 
 #include <read_mm.h>
+
 #include <pvector_view/pvector_view.hpp>
 #include <spmd_block/spmd_block.hpp>
+#include <utility/median.hpp>
+
+#include <boost/cstdint.hpp>
 
 #include <iostream>
 #include <vector>
+#include <iterator>
+
+#include <mkl.h>
 
 using hpx::Here;
 using hpx::_;
@@ -37,6 +45,12 @@ struct spmatrix
             begins_[i] = sizes_[i-1] + begins_[i-1];
         }
         begins_[N] = m_;
+
+        for (int & value : rows_)
+        value++;
+
+        for (int & value : indices_)
+        value++;
     }
 
     int m_, n_, nnz_, chunksize_;
@@ -49,50 +63,70 @@ struct spmatrix
 
 
 
-void spmv( hpx::parallel::spmd_block & block, spmatrix & a, hpx::coarray<double,1> & x, hpx::coarray<double,1> & y )
+boost::uint64_t spmv_coarray( hpx::parallel::spmd_block & block
+                            , spmatrix const & a
+                            , std::vector<double> const & x
+                            , hpx::coarray<double,1> & y
+                            , int test_count)
 {
-    int rank = block.rank();
-    int begin = a.begins_[rank];
-    int chunksize = a.sizes_[rank];
+    std::vector<boost::uint64_t> time;
 
-    std::vector<double>::iterator out = y.data(Here).begin();
-
-    std::vector<int>::iterator row    = a.rows_.begin()    + begin;
-    std::vector<int>::iterator idx    = a.indices_.begin() + *row;
-    std::vector<double>::iterator val = a.values_.begin()  + *row;
-
-    for (int i = 0; i < chunksize; i++, row++, out++)
+    for (int iter = 0; iter != test_count; ++iter)
     {
-        int end = *(row + 1);
-
-        for ( int o = *row  ; o < end;  o++, val++, idx++)
+        boost::uint64_t start = hpx::util::high_resolution_clock::now();
         {
-            int other_rank = 0;
-            do
-            {
-                ++other_rank;
-            }
-            while( *idx >= a.begins_[other_rank] );
-            other_rank --;
+            int rank = block.rank();
+            int begin = a.begins_[rank];
+            int chunksize = a.sizes_[rank];
 
-            int local_idx = *idx - a.begins_[other_rank];
+            double * out = y.data(Here).data();
 
-            *out += *val * x(other_rank)[ local_idx ];
+            const int * row  = a.rows_.data() + begin;
+            const int * idx  = a.indices_.data() + *row - 1;
+            const double * val = a.values_.data() + *row - 1;
+
+            // for (int i = 0; i < chunksize; i++, row++, out++)
+            // {
+            //     double tmp = 0.;
+            //     int end = *(row + 1);
+
+            //     for ( int o = *row; o < end;  o++, val++, idx++)
+            //     {
+            //         tmp += *val * x[*idx - 1];
+            //     }
+            //     *out = tmp;
+            // }
+
+            char transa('N');
+            mkl_dcsrgemv( &transa
+                        , &chunksize
+                        , val
+                        , row
+                        , idx
+                        , x.data()
+                        , out
+                        );
         }
+        time.push_back( hpx::util::high_resolution_clock::now() - start );
     }
+    block.barrier_sync("spmv");
+
+    return hpx::detail::median(time.begin(),time.end());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void image_coarray( hpx::parallel::spmd_block block, std::string filename)
+void image_coarray( hpx::parallel::spmd_block block, std::string filename, int test_count)
 {
     spmatrix a(filename);
 
     hpx::coarray<double,1> y( block, "y", {_}, hpx::partition<double>( a.chunksize_ ) );
-    hpx::coarray<double,1> x( block, "x", {_}, hpx::partition<double>( a.chunksize_ ) );
+    std::vector<double> x(a.n_);
 
-    spmv(block,a,x,y);
+    std::size_t size = 2 * a.nnz_;
 
-    block.barrier_sync("");
+    hpx::cout << "performances : "
+    << double(size)/spmv_coarray(block,a,x,y,test_count)
+    << " GFlops\n";
 }
 HPX_DEFINE_PLAIN_ACTION(image_coarray);
 ///////////////////////////////////////////////////////////////////////////////
@@ -100,11 +134,17 @@ HPX_DEFINE_PLAIN_ACTION(image_coarray);
 int hpx_main(boost::program_options::variables_map& vm)
 {
     std::string filename = vm["filename"].as<std::string>();
+    int test_count       = vm["test_count"].as<int>();
+
+    // verify that input is within domain of program
+    if (test_count == 0 || test_count < 0) {
+        hpx::cout << "test_count cannot be zero or negative...\n" << hpx::flush;
+    }
 
     image_coarray_action act;
 
     auto localities = hpx::find_all_localities();
-    hpx::parallel::define_spmd_block( localities, act, filename ).get();
+    hpx::parallel::define_spmd_block( localities, act, filename, test_count).get();
 
     return hpx::finalize();
 }
@@ -123,6 +163,10 @@ int main(int argc, char* argv[])
     ("filename"
     , boost::program_options::value<std::string>()->default_value("")
     , "filename of the matrix market (default: "")")
+
+    ("test_count"
+    , boost::program_options::value<int>()->default_value(100) // for overall time of 10 ms
+    , "number of tests to be averaged (default: 100)")
     ;
 
     return hpx::init(cmdline, argc, argv, cfg);
