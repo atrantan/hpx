@@ -106,4 +106,31 @@
 \end{center}
 \end{frame}
 %=============================================
+\begin{frame}
+\frametitle{Sparse Matrix Vector - Performance evaluation}
+\begin{center}
+\begin{tikzpicture}[scale = 0.8]
+\pgfplotsset{grid style={thick,dashed,gray}}
+\pgfplotsset{minor grid style={dotted,gray}}
+\begin{axis}[xlabel=\footnotesize Number of cores,
+             ylabel=\footnotesize Performance in GFlop/s,
+             grid=both,
+             minor tick num=1,
+             ymin=0,
+             xmin = 0,
+             legend pos=north west,
+             legend style={at={(1.02,1)}}]
+  \addplot[color=blue]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/pvector_view_spmv/pvector_view_spmv_problem=s3dkt3m2_scale_over_ncores.dat};
+  \addlegendentry{\tiny{HPX coarray - MPI (problem : s3dkt3m2)}}
+  \addplot[color=red]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/pvector_view_spmv/pvector_view_spmv_problem=memplus_scale_over_ncores.dat};
+  \addlegendentry{\tiny{HPX coarray - MPI (problem : memplus)}}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+\end{frame}
+%=============================================
 \end{document}
