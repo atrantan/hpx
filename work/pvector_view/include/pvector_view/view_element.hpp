@@ -95,7 +95,8 @@ namespace hpx { namespace detail {
         }
 
     // Safe assignment (Put operation)
-        void operator=(view_element && other)
+        template<typename RightStencil>
+        void operator=(view_element<T,RightStencil> && other)
         {
             if ( other.is_data_here() )
             {
