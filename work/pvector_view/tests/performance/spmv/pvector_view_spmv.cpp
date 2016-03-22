@@ -62,19 +62,22 @@ struct spmatrix
 };
 
 
-
 boost::uint64_t spmv_coarray( hpx::parallel::spmd_block & block
                             , spmatrix const & a
-                            , std::vector<double> const & x
+                            , std::vector<double> & x
+                            , hpx::coarray<double,2> & xbuf
                             , hpx::coarray<double,1> & y
                             , int test_count)
 {
     std::vector<boost::uint64_t> time;
+    auto localities = hpx::find_all_localities();
+    std::size_t N = localities.size();
 
+    boost::uint64_t start = hpx::util::high_resolution_clock::now();
     for (int iter = 0; iter != test_count; ++iter)
     {
-        boost::uint64_t start = hpx::util::high_resolution_clock::now();
-        {
+        // boost::uint64_t start = hpx::util::high_resolution_clock::now();
+        // {
             int rank = block.rank();
             int begin = a.begins_[rank];
             int chunksize = a.sizes_[rank];
@@ -85,11 +88,21 @@ boost::uint64_t spmv_coarray( hpx::parallel::spmd_block & block
             const int * idx  = a.indices_.data() + *row - 1;
             const double * val = a.values_.data() + *row - 1;
 
+            // const int * cs = a.sizes_.data();
+            // double * xptr = x.data();
+            // for( int i = 0; i<N ; i++, cs++ )
+            // {
+            //     double * buffer = xbuf.data(i,Here).data();
+            //     double * xend = xptr + *cs;
+            //     for(; xptr!=xend; xptr++, buffer++)
+            //         *xptr = *buffer;
+            // }
+
+
             // for (int i = 0; i < chunksize; i++, row++, out++)
             // {
             //     double tmp = 0.;
             //     int end = *(row + 1);
-
             //     for ( int o = *row; o < end;  o++, val++, idx++)
             //     {
             //         tmp += *val * x[*idx - 1];
@@ -106,12 +119,17 @@ boost::uint64_t spmv_coarray( hpx::parallel::spmd_block & block
                         , x.data()
                         , out
                         );
-        }
-        time.push_back( hpx::util::high_resolution_clock::now() - start );
+
+            // for(std::size_t i = 0; i<N; i++)
+            // xbuf(rank,i) = y(rank);
+            // block.barrier_sync("spmv"+iter);
+        // }
+        // time.push_back( hpx::util::high_resolution_clock::now() - start );
     }
     block.barrier_sync("spmv");
+    return ( hpx::util::high_resolution_clock::now() - start ) / test_count;
 
-    return hpx::detail::median(time.begin(),time.end());
+    // return hpx::detail::median(time.begin(),time.end());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -120,12 +138,13 @@ void image_coarray( hpx::parallel::spmd_block block, std::string filename, int t
     spmatrix a(filename);
 
     hpx::coarray<double,1> y( block, "y", {_}, hpx::partition<double>( a.chunksize_ ) );
+    hpx::coarray<double,2> xbuf( block, "xbuf", {_,_}, hpx::partition<double>( a.chunksize_ ) );
     std::vector<double> x(a.n_);
 
     std::size_t size = 2 * a.nnz_;
 
     hpx::cout << "performances : "
-    << double(size)/spmv_coarray(block,a,x,y,test_count)
+    << double(size)/spmv_coarray(block,a,x,xbuf,y,test_count)
     << " GFlops\n";
 }
 HPX_DEFINE_PLAIN_ACTION(image_coarray);
