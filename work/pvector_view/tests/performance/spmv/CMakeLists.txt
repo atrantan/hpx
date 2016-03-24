@@ -37,6 +37,7 @@ include_directories(${mkl_include_dir})
 
 set(tests
     pvector_view_spmv
+    hpx_threaded_spmv
    )
 
 foreach(test ${tests})

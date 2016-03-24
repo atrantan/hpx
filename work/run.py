@@ -94,57 +94,49 @@ def plot_scalability(apps, title,  xlabel, xlabel_range, ylabel, ylabel_range, d
 problem = ["s3dkt3m2","memplus"]
 ncores = ['1', '2', '4', '6', '8', '10','12','14', '16']
 
-matrix_order = ['10000', '14000', '18000', '22000']
-partition_order = ['500', '700', '900', '1100']
+# matrix_order = ['10000', '14000', '18000', '22000']
+# partition_order = ['500', '700', '900', '1100']
 
-#create hpx dump directory
-dumpdir = 'perfs/pvector_view_transpose'
-if not os.path.exists(dumpdir):
- 	print "creating "+dumpdir+" directory"
- 	os.makedirs(dumpdir)
+# #create hpx dump directory
+# dumpdir = 'perfs/pvector_view_transpose'
+# if not os.path.exists(dumpdir):
+#  	print "creating "+dumpdir+" directory"
+#  	os.makedirs(dumpdir)
 
-#hpx actions version
-for n in ncores:
-	for i in range(0, len(matrix_order)):
-		dumpfile = dumpdir+"/pvector_view_transpose_matrix_order={0}_partition_order={1}_ncores={2}.dump".format(matrix_order[i], partition_order[i], n)
+# #hpx actions version
+# for n in ncores:
+# 	for i in range(0, len(matrix_order)):
+# 		dumpfile = dumpdir+"/pvector_view_transpose_matrix_order={0}_partition_order={1}_ncores={2}.dump".format(matrix_order[i], partition_order[i], n)
 
-		cmdline = "mpirun -np "+n+" ./bin/pvector_view_transpose_test -t 1 --matrix_order {0} --partition_order {1} > {2}".format(
-		  matrix_order[i]
-		, partition_order[i]
-		, dumpfile
-		)
-		print cmdline
-		os.system(cmdline)
+# 		cmdline = "mpirun -np "+n+" ./bin/pvector_view_transpose_test -t 1 --matrix_order {0} --partition_order {1} > {2}".format(
+# 		  matrix_order[i]
+# 		, partition_order[i]
+# 		, dumpfile
+# 		)
+# 		print cmdline
+# 		os.system(cmdline)
 
-#create hpx dump directory
-dumpdir = 'perfs/pvector_view_transpose_with_tasks'
-if not os.path.exists(dumpdir):
-	print "creating "+dumpdir+" directory"
-	os.makedirs(dumpdir)
+# #create hpx dump directory
+# dumpdir = 'perfs/pvector_view_transpose_with_tasks'
+# if not os.path.exists(dumpdir):
+# 	print "creating "+dumpdir+" directory"
+# 	os.makedirs(dumpdir)
 
 
-#hpx tasks version
-for n in ncores:
-	for i in range(0, len(matrix_order)):
-		dumpfile = dumpdir+"/pvector_view_transpose_with_tasks_matrix_order={0}_partition_order={1}_ncores={2}.dump".format(matrix_order[i], partition_order[i], n)
+# #hpx tasks version
+# for n in ncores:
+# 	for i in range(0, len(matrix_order)):
+# 		dumpfile = dumpdir+"/pvector_view_transpose_with_tasks_matrix_order={0}_partition_order={1}_ncores={2}.dump".format(matrix_order[i], partition_order[i], n)
 
-		cmdline = numaline(int(n)) +"./bin/pvector_view_transpose_with_tasks_test -t "+n+" --matrix_order {0} --partition_order {1} > {2}".format(
-		  matrix_order[i]
-		, partition_order[i]
-		, dumpfile
-		)
-		print cmdline
-		os.system(cmdline)
+# 		cmdline = numaline(int(n)) +"./bin/pvector_view_transpose_with_tasks_test -t "+n+" --matrix_order {0} --partition_order {1} > {2}".format(
+# 		  matrix_order[i]
+# 		, partition_order[i]
+# 		, dumpfile
+# 		)
+# 		print cmdline
+# 		os.system(cmdline)
 
-plot_scalability(["pvector_view_transpose","pvector_view_transpose_with_tasks","intel_openmp_transpose"], "Scalability of transpose with co-array"
-	            , "ncores", ncores
-							, "matrix_order", matrix_order
-							, "partition_order", partition_order
-							, "matrix_order=#1_partition_order=#2_ncores=#0"
-              , 'GB/s'
-				)
-
-#create hpx dump directory
+# create hpx dump directory
 dumpdir = 'perfs/pvector_view_spmv'
 if not os.path.exists(dumpdir):
 	print "creating "+dumpdir+" directory"
@@ -163,9 +155,29 @@ for n in ncores:
 		print cmdline
 		os.system(cmdline)
 
-plot_scalability(["pvector_view_spmv"], "Scalability of spmv with co-array"
+#create hpx for_each dump directory
+dumpdir = 'perfs/hpx_threaded_spmv'
+if not os.path.exists(dumpdir):
+	print "creating "+dumpdir+" directory"
+	os.makedirs(dumpdir)
+
+#hpx for_each version
+for n in ncores:
+	for i in range(0, len(problem)):
+		dumpfile = dumpdir+"/hpx_threaded_spmv_problem={0}_ncores={1}.dump".format(problem[i], n)
+
+		cmdline = "./bin/hpx_threaded_spmv_test -t "+ n +" --filename {0}/pvector_view/tests/performance/spmv/ExampleMatrices/{1}.mtx --grain_factor 4 > {2}".format(
+		  path
+		, problem[i]
+		, dumpfile
+		)
+		print cmdline
+		os.system(cmdline)
+
+
+plot_scalability(["pvector_view_spmv","hpx_threaded_spmv"], "Scalability of spmv with co-array"
 		            , "ncores", ncores
-								, "problem", problem
-								, "problem=#1_ncores=#0"
-								, 'GFlops'
-								)
+					, "problem", problem
+					, "problem=#1_ncores=#0"
+					, 'GFlops'
+					)
