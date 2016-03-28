@@ -54,76 +54,64 @@
 \titlepage
 \end{frame}
 % %=============================================
-% \begin{frame}
-% \frametitle{Matrix Transpose - Performance evaluation}
-% \begin{center}
-% \begin{tikzpicture}[scale = 0.8]
-% \pgfplotsset{grid style={thick,dashed,gray}}
-% \pgfplotsset{minor grid style={dotted,gray}}
-% \begin{axis}[xlabel=\footnotesize Number of cores,
-%              ylabel=\footnotesize Performance in Gb/s,
-%              grid=both,
-%              minor tick num=1,
-%              ymin=0,
-%              ymax = 10,
-%              xmin = 0,
-%              legend pos=north west,
-%              legend style={at={(1.02,1)}}]
-%   \addplot[color=black]
-%   plot[smooth,mark=diamond*,mark size=1.5pt] file
-%   {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=10000_partition_order=500_scale_over_ncores.dat};
-%   \addlegendentry{\tiny{HPX coarray - MPI  (order=10000, tile order=500)}}
-%   \addplot[color=blue]
-%   plot[smooth,mark=diamond*,mark size=1.5pt] file
-%   {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=14000_partition_order=700_scale_over_ncores.dat};
-%   \addlegendentry{\tiny{HPX coarray - MPI (order=14000, tile order=700)}}
-%   \addplot[color=red]
-%   plot[smooth,mark=diamond*,mark size=1.5pt] file
-%   {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=18000_partition_order=900_scale_over_ncores.dat};
-%   \addlegendentry{\tiny{HPX coarray - MPI (order=18000, tile order=900)}}
-%   \addplot[color=dkgreen]
-%   plot[smooth,mark=diamond*,mark size=1.5pt] file
-%   {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=22000_partition_order=1100_scale_over_ncores.dat};
-%   \addlegendentry{\tiny{HPX coarray - MPI (order=22000, tile order=1100)}}
-%   \addplot[color=black]
-%   plot[densely dotted,mark=diamond*,mark size=1.5pt] file
-%   {perfs/pvector_view_transpose_with_tasks/pvector_view_transpose_with_tasks_matrix_order=10000_partition_order=500_scale_over_ncores.dat};
-%   \addlegendentry{\tiny{HPX coarray - tasks (order=10000, tile order=500)}}
-%   \addplot[color=blue]
-%   plot[densely dotted,mark=diamond*,mark size=1.5pt] file
-%   {perfs/pvector_view_transpose_with_tasks/pvector_view_transpose_with_tasks_matrix_order=14000_partition_order=700_scale_over_ncores.dat};
-%   \addlegendentry{\tiny{HPX coarray - tasks (order=14000, tile order=700)}}
-%   \addplot[color=red]
-%   plot[densely dotted,mark=diamond*,mark size=1.5pt] file
-%   {perfs/pvector_view_transpose_with_tasks/pvector_view_transpose_with_tasks_matrix_order=18000_partition_order=900_scale_over_ncores.dat};
-%   \addlegendentry{\tiny{HPX coarray - tasks (order=18000, tile order=900)}}
-%   \addplot[color=dkgreen]
-%   plot[densely dotted,mark=diamond*,mark size=1.5pt] file
-%   {perfs/pvector_view_transpose_with_tasks/pvector_view_transpose_with_tasks_matrix_order=22000_partition_order=1100_scale_over_ncores.dat};
-%   \addlegendentry{\tiny{HPX coarray - tasks (order=22000, tile order=1100)}}
-%   \addplot[color=black]
-%   plot[dashed,mark=diamond*,mark size=1.5pt] file
-%   {perfs/intel_openmp_transpose/intel_openmp_transpose_matrix_order=10000_partition_order=500_scale_over_ncores.dat};
-%   \addlegendentry{\tiny{OpenMP (order=10000, tile order=500)}}
-%   \addplot[color=blue]
-%   plot[dashed,mark=diamond*,mark size=1.5pt] file
-%   {perfs/intel_openmp_transpose/intel_openmp_transpose_matrix_order=14000_partition_order=700_scale_over_ncores.dat};
-%   \addlegendentry{\tiny{OpenMP (order=14000, tile order=700)}}
-%   \addplot[color=red]
-%   plot[dashed,mark=diamond*,mark size=1.5pt] file
-%   {perfs/intel_openmp_transpose/intel_openmp_transpose_matrix_order=18000_partition_order=900_scale_over_ncores.dat};
-%   \addlegendentry{\tiny{OpenMP (order=18000, tile order=900)}}
-%   \addplot[color=dkgreen]
-%   plot[dashed,mark=diamond*,mark size=1.5pt] file
-%   {perfs/intel_openmp_transpose/intel_openmp_transpose_matrix_order=22000_partition_order=1100_scale_over_ncores.dat};
-%   \addlegendentry{\tiny{OpenMP (order=22000, tile order=1100)}}
-% \end{axis}
-% \end{tikzpicture}
-% \end{center}
-% \end{frame}
+\begin{frame}
+\frametitle{Matrix Transpose - Performance evaluation}
+\begin{center}
+\begin{tikzpicture}[scale = 0.8]
+\pgfplotsset{grid style={thick,dashed,gray}}
+\pgfplotsset{minor grid style={dotted,gray}}
+\begin{axis}[xlabel=\footnotesize Number of cores,
+             ylabel=\footnotesize Performance in GB/s,
+             grid=both,
+             minor tick num=1,
+             ymin=0,
+             % ymax = 10,
+             xmin = 0,
+             legend pos=north west,
+             legend style={at={(1.02,1)}}]
+  \addplot[color=black]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=10000_partition_order=500_unit=GBs_scale_over_ncores.dat};
+  \addlegendentry{\tiny{HPX coarray - MPI  (order=10000, tile order=500)}}
+  \addplot[color=blue]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=14000_partition_order=700_unit=GBs_scale_over_ncores.dat};
+  \addlegendentry{\tiny{HPX coarray - MPI (order=14000, tile order=700)}}
+  \addplot[color=red]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=18000_partition_order=900_unit=GBs_scale_over_ncores.dat};
+  \addlegendentry{\tiny{HPX coarray - MPI (order=18000, tile order=900)}}
+  \addplot[color=dkgreen]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/pvector_view_transpose/pvector_view_transpose_matrix_order=22000_partition_order=1100_unit=GBs_scale_over_ncores.dat};
+  \addlegendentry{\tiny{HPX coarray - MPI (order=22000, tile order=1100)}}
+  \addplot[color=black]
+  plot[densely dotted,mark=diamond*,mark size=1.5pt] file
+  {perfs/pvector_view_transpose_with_tasks/pvector_view_transpose_with_tasks_matrix_order=10000_partition_order=500_unit=GBs_scale_over_ncores.dat};
+  \addlegendentry{\tiny{HPX coarray - tasks (order=10000, tile order=500)}}
+  \addplot[color=blue]
+  plot[densely dotted,mark=diamond*,mark size=1.5pt] file
+  {perfs/pvector_view_transpose_with_tasks/pvector_view_transpose_with_tasks_matrix_order=14000_partition_order=700_unit=GBs_scale_over_ncores.dat};
+  \addlegendentry{\tiny{HPX coarray - tasks (order=14000, tile order=700)}}
+  \addplot[color=red]
+  plot[densely dotted,mark=diamond*,mark size=1.5pt] file
+  {perfs/pvector_view_transpose_with_tasks/pvector_view_transpose_with_tasks_matrix_order=18000_partition_order=900_unit=GBs_scale_over_ncores.dat};
+  \addlegendentry{\tiny{HPX coarray - tasks (order=18000, tile order=900)}}
+  \addplot[color=dkgreen]
+  plot[densely dotted,mark=diamond*,mark size=1.5pt] file
+  {perfs/pvector_view_transpose_with_tasks/pvector_view_transpose_with_tasks_matrix_order=22000_partition_order=1100_unit=GBs_scale_over_ncores.dat};
+  \addlegendentry{\tiny{HPX coarray - tasks (order=22000, tile order=1100)}}
+  % \addplot[color=black]
+  % plot[thick,mark=diamond*,mark size=1.5pt] file
+  % {perfs/stream/stream_scale_over_ncores.dat};
+  % \addlegendentry{\tiny{Available Bandwidth}}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+\end{frame}
 %=============================================
 \begin{frame}
-\frametitle{Sparse Matrix Vector Multiplication - Performance evaluation}
+\frametitle{Sparse Matrix Vector Multiplication - Performance evaluation in GFlop/s}
 \begin{center}
 \begin{tikzpicture}[scale = 0.8]
 \pgfplotsset{grid style={thick,dashed,gray}}
@@ -138,23 +126,77 @@
              legend style={at={(1.02,1)}}]
   \addplot[color=blue]
   plot[smooth,mark=diamond*,mark size=1.5pt] file
-  {perfs/pvector_view_spmv/pvector_view_spmv_problem=s3dkt3m2_scale_over_ncores.dat};
+  {perfs/pvector_view_spmv/pvector_view_spmv_problem=s3dkt3m2_unit=GFlops_scale_over_ncores.dat};
   \addlegendentry{\tiny{HPX coarray (problem : s3dkt3m2)}}
   \addplot[color=red]
   plot[smooth,mark=diamond*,mark size=1.5pt] file
-  {perfs/pvector_view_spmv/pvector_view_spmv_problem=memplus_scale_over_ncores.dat};
+  {perfs/pvector_view_spmv/pvector_view_spmv_problem=memplus_unit=GFlops_scale_over_ncores.dat};
   \addlegendentry{\tiny{HPX coarray (problem : memplus)}}
   \addplot[color=blue]
+  plot[dotted,mark=diamond*,mark size=1.5pt] file
+  {perfs/pvector_view_spmv_with_tasks/pvector_view_spmv_with_tasks_problem=s3dkt3m2_unit=GFlops_scale_over_ncores.dat};
+  \addlegendentry{\tiny{HPX coarray + tasks (problem : s3dkt3m2)}}
+  \addplot[color=red]
+  plot[dotted,mark=diamond*,mark size=1.5pt] file
+  {perfs/pvector_view_spmv_with_tasks/pvector_view_spmv_with_tasks_problem=memplus_unit=GFlops_scale_over_ncores.dat};
+  \addlegendentry{\tiny{HPX coarray + tasks (problem : memplus)}}
+  \addplot[color=blue]
   plot[densely dotted,mark=diamond*,mark size=1.5pt] file
-  {perfs/hpx_threaded_spmv/hpx_threaded_spmv_problem=s3dkt3m2_scale_over_ncores.dat};
+  {perfs/hpx_threaded_spmv/hpx_threaded_spmv_problem=s3dkt3m2_unit=GFlops_scale_over_ncores.dat};
   \addlegendentry{\tiny{HPX parallel for\_each (problem : s3dkt3m2)}}
   \addplot[color=red]
   plot[densely dotted,mark=diamond*,mark size=1.5pt] file
-  {perfs/hpx_threaded_spmv/hpx_threaded_spmv_problem=memplus_scale_over_ncores.dat};
+  {perfs/hpx_threaded_spmv/hpx_threaded_spmv_problem=memplus_unit=GFlops_scale_over_ncores.dat};
   \addlegendentry{\tiny{HPX parallel for\_each (problem : memplus)}}
 \end{axis}
 \end{tikzpicture}
 \end{center}
 \end{frame}
 %=============================================
+\begin{frame}
+\frametitle{Sparse Matrix Vector Multiplication - Performance evaluation in GB/s}
+\begin{center}
+\begin{tikzpicture}[scale = 0.8]
+\pgfplotsset{grid style={thick,dashed,gray}}
+\pgfplotsset{minor grid style={dotted,gray}}
+\begin{axis}[xlabel=\footnotesize Number of cores,
+             ylabel=\footnotesize Performance in GB/s,
+             grid=both,
+             minor tick num=1,
+             ymin=0,
+             xmin = 0,
+             legend pos=north west,
+             legend style={at={(1.02,1)}}]
+  \addplot[color=blue]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/pvector_view_spmv/pvector_view_spmv_problem=s3dkt3m2_unit=GBs_scale_over_ncores.dat};
+  \addlegendentry{\tiny{HPX coarray (problem : s3dkt3m2)}}
+  \addplot[color=red]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/pvector_view_spmv/pvector_view_spmv_problem=memplus_unit=GBs_scale_over_ncores.dat};
+  \addlegendentry{\tiny{HPX coarray (problem : memplus)}}
+  \addplot[color=blue]
+  plot[dotted,mark=diamond*,mark size=1.5pt] file
+  {perfs/pvector_view_spmv_with_tasks/pvector_view_spmv_with_tasks_problem=s3dkt3m2_unit=GBs_scale_over_ncores.dat};
+  \addlegendentry{\tiny{HPX coarray + tasks (problem : s3dkt3m2)}}
+  \addplot[color=red]
+  plot[dotted,mark=diamond*,mark size=1.5pt] file
+  {perfs/pvector_view_spmv_with_tasks/pvector_view_spmv_with_tasks_problem=memplus_unit=GBs_scale_over_ncores.dat};
+  \addlegendentry{\tiny{HPX coarray + tasks (problem : memplus)}}
+  \addplot[color=blue]
+  plot[densely dotted,mark=diamond*,mark size=1.5pt] file
+  {perfs/hpx_threaded_spmv/hpx_threaded_spmv_problem=s3dkt3m2_unit=GBs_scale_over_ncores.dat};
+  \addlegendentry{\tiny{HPX parallel for\_each (problem : s3dkt3m2)}}
+  \addplot[color=red]
+  plot[densely dotted,mark=diamond*,mark size=1.5pt] file
+  {perfs/hpx_threaded_spmv/hpx_threaded_spmv_problem=memplus_unit=GBs_scale_over_ncores.dat};
+  \addlegendentry{\tiny{HPX parallel for\_each (problem : memplus)}}
+  \addplot[color=black]
+  plot[thick,mark=diamond*,mark size=1.5pt] file
+  {perfs/stream/stream_scale_over_ncores.dat};
+  \addlegendentry{\tiny{Available Bandwidth}}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+\end{frame}
 \end{document}

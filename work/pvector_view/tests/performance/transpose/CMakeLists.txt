@@ -18,3 +18,10 @@ foreach(test ${tests})
     add_executable(${test}_test ${sources})
     target_link_libraries (${test}_test ${HPX_LIBRARIES} hpx_partitioned_vector hpx_spmd_block)
 endforeach()
+
+
+set(test intel_openmp_transpose)
+set(sources ${test}.cpp)
+add_executable(${test}_test ${sources})
+set_target_properties(${test}_test PROPERTIES COMPILE_FLAGS -fopenmp)
+target_link_libraries (${test}_test ${HPX_LIBRARIES} -fopenmp)

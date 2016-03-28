@@ -37,6 +37,7 @@ include_directories(${mkl_include_dir})
 
 set(tests
     pvector_view_spmv
+    pvector_view_spmv_with_tasks
     hpx_threaded_spmv
    )
 

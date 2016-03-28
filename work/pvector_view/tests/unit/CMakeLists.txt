@@ -7,10 +7,10 @@
 cmake_minimum_required(VERSION 2.8.4 FATAL_ERROR)
 
 set(tests
-    # coarray_iter
-    # coarray_autosubscript
-    # coarray_stencil_boundary
-    # coarray_proxy_operation
+    coarray_iter
+    coarray_autosubscript
+    coarray_stencil_boundary
+    coarray_proxy_operation
     coarray_proxy_localsubscript
    )
 

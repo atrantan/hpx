@@ -104,6 +104,7 @@ int hpx_main(boost::program_options::variables_map& vm)
 
     spmatrix a(filename, grain_factor);
     std::size_t size = 2 * a.nnz_;
+    std::size_t datasize = (a.nnz_ + 2*a.m_)*sizeof(double);
 
     std::vector<double> x( a.n_ );
 
@@ -116,7 +117,8 @@ int hpx_main(boost::program_options::variables_map& vm)
                 image_vector(a, x, filename, test_count, grain_factor, rank);
             });
      boost::uint64_t toc = ( hpx::util::high_resolution_clock::now() - start ) / test_count;
-     printf("performances : %f  GFlops\n", double(size)/toc);
+     printf("performances : %f GFlops\n", double(size)/toc);
+     printf("performances : %f GBs\n", double(datasize)/toc);
 
     return hpx::finalize();
 }

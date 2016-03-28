@@ -133,7 +133,7 @@ void image_coarray( hpx::parallel::spmd_block block
 
     hpx::cout << "performances : "
     << double(size)/transpose_coarray(block, out, in, height, width, local_height, local_width, local_leading_dimension, test_count)
-    << " GB/s\n";
+    << " GBs\n";
 }
 HPX_DEFINE_PLAIN_ACTION(image_coarray);
 

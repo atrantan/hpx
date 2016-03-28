@@ -64,7 +64,6 @@ struct spmatrix
 boost::uint64_t spmv_coarray( hpx::parallel::spmd_block & block
                             , spmatrix const & a
                             , std::vector<double> & x
-                            , hpx::coarray<double,2> & xbuf
                             , hpx::coarray<double,1> & y
                             , int test_count)
 {
@@ -87,17 +86,6 @@ boost::uint64_t spmv_coarray( hpx::parallel::spmd_block & block
             const int * idx  = a.indices_.data() + *row - 1;
             const double * val = a.values_.data() + *row - 1;
 
-            // const int * cs = a.sizes_.data();
-            // double * xptr = x.data();
-            // for( int i = 0; i<N ; i++, cs++ )
-            // {
-            //     double * buffer = xbuf.data(i,_).data();
-            //     double * xend = xptr + *cs;
-            //     for(; xptr!=xend; xptr++, buffer++)
-            //         *xptr = *buffer;
-            // }
-
-
             // for (int i = 0; i < chunksize; i++, row++, out++)
             // {
             //     double tmp = 0.;
@@ -118,10 +106,6 @@ boost::uint64_t spmv_coarray( hpx::parallel::spmd_block & block
                         , x.data()
                         , out
                         );
-
-            // for(std::size_t i = 0; i<N; i++)
-            // xbuf(rank,i) = y(rank);
-            // block.barrier_sync("spmv"+iter);
         // }
         // time.push_back( hpx::util::high_resolution_clock::now() - start );
     }
@@ -137,14 +121,14 @@ void image_coarray( hpx::parallel::spmd_block block, std::string filename, int t
     spmatrix a(filename);
 
     hpx::coarray<double,1> y( block, "y", {_}, hpx::partition<double>( a.chunksize_ ) );
-    hpx::coarray<double,2> xbuf( block, "xbuf", {_,_}, hpx::partition<double>( a.chunksize_ ) );
     std::vector<double> x(a.n_);
 
     std::size_t size = 2 * a.nnz_;
+    std::size_t datasize = (a.nnz_ + 2*a.m_)*sizeof(double);
 
-    hpx::cout << "performances : "
-    << double(size)/spmv_coarray(block,a,x,xbuf,y,test_count)
-    << " GFlops\n";
+    boost::uint64_t toc = spmv_coarray(block,a,x,y,test_count);
+    printf("performances : %f GFlops\n", double(size)/toc);
+    printf("performances : %f GBs\n", double(datasize)/toc);
 }
 HPX_DEFINE_PLAIN_ACTION(image_coarray);
 ///////////////////////////////////////////////////////////////////////////////
