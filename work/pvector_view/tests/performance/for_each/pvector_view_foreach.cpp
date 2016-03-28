@@ -88,7 +88,7 @@ boost::uint64_t foreach_coarray(  hpx::parallel::spmd_block & block
                                 , int test_count
                                 )
 {
-    using hpx::Here;
+    using hpx::_;
 
     std::vector<boost::uint64_t> time;
 
@@ -96,7 +96,7 @@ boost::uint64_t foreach_coarray(  hpx::parallel::spmd_block & block
     {
         boost::uint64_t start = hpx::util::high_resolution_clock::now();
         {
-            auto const & vlocal = v.data(Here);
+            auto const & vlocal = v.data(_);
             std::for_each( vlocal.begin(), vlocal.end(), wait_op<Coarray>() );
             block.barrier_sync( std::to_string(i) );
         }

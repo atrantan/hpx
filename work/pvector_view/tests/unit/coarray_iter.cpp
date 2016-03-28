@@ -21,7 +21,6 @@ constexpr auto image_coarray = hpx::make_action(
 [](hpx::parallel::spmd_block block)
 {
     using hpx::_;
-    using hpx::Here;
     using const_iterator = typename std::vector<double>::const_iterator;
 
     auto localities = block.find_all_localities();

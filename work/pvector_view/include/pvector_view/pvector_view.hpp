@@ -33,10 +33,11 @@ namespace hpx {
     namespace detail{
 
         struct auto_subscript {
-            // Defined only to pass the ternary operator in offset solver
+            // Defined to pass the ternary operator in offset solver
+            // and for automatic size
             constexpr operator std::size_t()
             {
-                return 0;
+                return std::size_t(-1);
             }
         };
 
@@ -54,12 +55,8 @@ namespace hpx {
 
     }
 
-    // Used for "automatic" coarray/view subscript
-    constexpr hpx::detail::auto_subscript Here;
-
-// Used for "automatic" coarray/view size
-    constexpr std::size_t _ = std::size_t(-1);
-
+    // Used for "automatic" coarray/view subscript and size
+    constexpr hpx::detail::auto_subscript _;
 
 // Struct defining a pvector_view.
 
@@ -134,7 +131,7 @@ namespace hpx {
 
             for( std::size_t i : sw_sizes  )
             {
-                *out1 = tmp1 *= ( i != hpx::_ ? i : numlocs );
+                *out1 = tmp1 *= ( i != std::size_t(-1) ? i : numlocs );
                 ++out1;
             }
 
@@ -144,7 +141,7 @@ namespace hpx {
 
             for( std::size_t i : sizes )
             {
-                *out2 = tmp2 *= ( i != hpx::_ ? i : numlocs );
+                *out2 = tmp2 *= ( i != std::size_t(-1) ? i : numlocs );
                 ++out2;
             }
 
@@ -192,7 +189,7 @@ namespace hpx {
             using last_element = typename hpx::detail::last_element< I... >::type;
             using condition = typename std::is_same<last_element,detail::auto_subscript>;
 
-            static_assert(condition::value,"**CoArray Error** : Data reference from subscript cannot be retrieved if the last index is not 'hpx::Here'");
+            static_assert(condition::value,"**CoArray Error** : Data reference from subscript cannot be retrieved if the last index is not 'hpx::_'");
 
             HPX_ASSERT_MSG( is_automatic_subscript_allowed
             ,"**CoArray Error** : Data reference from subscript cannot be retrieved if the last dimension size of the current coarray is not defined as automatic"
@@ -208,7 +205,7 @@ namespace hpx {
             using last_element = typename hpx::detail::last_element< I... >::type;
             using condition = typename std::is_same<last_element,detail::auto_subscript>;
 
-            static_assert(condition::value,"**CoArray Error** : Data reference from subscript cannot be retrieved if the last index is not 'hpx::Here'");
+            static_assert(condition::value,"**CoArray Error** : Data reference from subscript cannot be retrieved if the last index is not 'hpx::_'");
 
             HPX_ASSERT_MSG( is_automatic_subscript_allowed
             ,"**CoArray Error** : Data reference from subscript cannot be retrieved if the last dimension size of the current coarray is not defined as automatic"
@@ -225,7 +222,7 @@ namespace hpx {
             using last_element = typename hpx::detail::last_element< I... >::type;
             using condition = typename std::is_same<last_element,detail::auto_subscript>;
 
-            static_assert(!condition::value,"**CoArray Error** : 'hpx::Here' cannot be used for get operation from subscript");
+            static_assert(!condition::value,"**CoArray Error** : 'hpx::_' cannot be used for get operation from subscript");
 
             std::size_t offset = offset_solver(index... );
             return hpx::detail::view_element<T,stencil_type>(begin_ + offset, stencil_).const_data();
@@ -242,7 +239,7 @@ namespace hpx {
             using last_element = typename hpx::detail::last_element< I... >::type;
             using condition = typename std::is_same<last_element,detail::auto_subscript>;
 
-            static_assert(!condition::value,"**CoArray Error** : 'hpx::Here' cannot be used in proxy operation from subscript");
+            static_assert(!condition::value,"**CoArray Error** : 'hpx::_' cannot be used in proxy operation from subscript");
 
             std::size_t offset = offset_solver( index... );
             return hpx::detail::view_element<T,stencil_type>(begin_ + offset, stencil_);
@@ -308,7 +305,7 @@ namespace hpx {
             base_type & view (*this);
             std::size_t elt_size = init_value.size();
 
-            bool is_automatic_size = ( *(codimensions.end() -1) == hpx::_ );
+            bool is_automatic_size = ( *(codimensions.end() -1) == std::size_t(-1) );
 
             std::vector< hpx::id_type > localities = block.find_all_localities();
 
@@ -319,7 +316,7 @@ namespace hpx {
 
                 for( auto const & i : codimensions)
                 {
-                    size *= (i != hpx::_ ? i : numlocs);
+                    size *= (i != std::size_t(-1) ? i : numlocs);
                 }
 
                 std::size_t n = 1;

@@ -16,7 +16,6 @@
 
 #include <mkl.h>
 
-using hpx::Here;
 using hpx::_;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -82,7 +81,7 @@ boost::uint64_t spmv_coarray( hpx::parallel::spmd_block & block
             int begin = a.begins_[rank];
             int chunksize = a.sizes_[rank];
 
-            double * out = y.data(Here).data();
+            double * out = y.data(_).data();
 
             const int * row  = a.rows_.data() + begin;
             const int * idx  = a.indices_.data() + *row - 1;
@@ -92,7 +91,7 @@ boost::uint64_t spmv_coarray( hpx::parallel::spmd_block & block
             // double * xptr = x.data();
             // for( int i = 0; i<N ; i++, cs++ )
             // {
-            //     double * buffer = xbuf.data(i,Here).data();
+            //     double * buffer = xbuf.data(i,_).data();
             //     double * xend = xptr + *cs;
             //     for(; xptr!=xend; xptr++, buffer++)
             //         *xptr = *buffer;
