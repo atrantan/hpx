@@ -34,7 +34,7 @@ add_custom_target(
     run_tests_and_plot_results
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
     COMMAND python ${CMAKE_SOURCE_DIR}/run.py ${CMAKE_SOURCE_DIR}
-    COMMAND pdflatex ${CMAKE_SOURCE_DIR}/plot_results.tex
+    # COMMAND pdflatex ${CMAKE_SOURCE_DIR}/plot_results.tex
 )
 
 endif()
