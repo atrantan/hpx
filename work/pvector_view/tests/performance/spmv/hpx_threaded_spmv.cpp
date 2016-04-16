@@ -58,31 +58,26 @@ struct spmatrix
 
 
 ///////////////////////////////////////////////////////////////////////////////
-void image_vector( spmatrix & a, std::vector<double> const & x, std::string filename, int test_count, int grain_factor, std::size_t rank)
+void image_vector( spmatrix & a, std::vector<double> const & x, std::vector<double> & y, std::string filename, int test_count, int grain_factor, std::size_t rank)
 {
-    std::vector<double> y( a.chunksize_  );
+    int begin = a.begins_[rank];
+    int chunksize = a.sizes_[rank];
 
-    for (int iter = 0; iter != test_count; ++iter)
-    {
-        int begin = a.begins_[rank];
-        int chunksize = a.sizes_[rank];
+    double * out = y.data();
 
-        double * out = y.data();
+    const int * row  = a.rows_.data() + begin;
+    const int * idx  = a.indices_.data() + *row - 1;
+    const double * val = a.values_.data() + *row - 1;
 
-        const int * row  = a.rows_.data() + begin;
-        const int * idx  = a.indices_.data() + *row - 1;
-        const double * val = a.values_.data() + *row - 1;
-
-        char transa('N');
-        mkl_dcsrgemv( &transa
-                    , &chunksize
-                    , val
-                    , row
-                    , idx
-                    , x.data()
-                    , out
-                    );
-    }
+    char transa('N');
+    mkl_dcsrgemv( &transa
+                , &chunksize
+                , val
+                , row
+                , idx
+                , x.data()
+                , out
+                );
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -91,6 +86,7 @@ int hpx_main(boost::program_options::variables_map& vm)
     std::string filename = vm["filename"].as<std::string>();
     int test_count       = vm["test_count"].as<int>();
     std::size_t grain_factor = vm["grain_factor"].as<std::size_t>();
+    int unroll_factor    = vm["unroll_factor"].as<int>();
 
     // verify that input is within domain of program
     if (test_count == 0 || test_count < 0) {
@@ -108,17 +104,25 @@ int hpx_main(boost::program_options::variables_map& vm)
 
     std::vector<double> x( a.n_ );
 
+    int iter_end = test_count / unroll_factor;
+
     boost::uint64_t start = hpx::util::high_resolution_clock::now();
-          hpx::parallel::for_each(
-            hpx::parallel::par.with(scs),
-            r.begin(), r.end(),
-            [&](std::size_t rank)
-            {
-                image_vector(a, x, filename, test_count, grain_factor, rank);
-            });
-     boost::uint64_t toc = ( hpx::util::high_resolution_clock::now() - start ) / test_count;
-     printf("performances : %f GFlops\n", double(size)/toc);
-     printf("performances : %f GBs\n", double(datasize)/toc);
+    for (int iter = 0; iter != iter_end; ++iter)
+    {
+        hpx::parallel::for_each(
+        hpx::parallel::par.with(scs),
+        r.begin(), r.end(),
+        [&](std::size_t rank)
+        {
+            std::vector<double> y( a.chunksize_  );
+
+            for(int i = 0; i<unroll_factor; i++)
+                image_vector(a, x, y, filename, test_count, grain_factor, rank);
+        });
+    }
+    boost::uint64_t toc = ( hpx::util::high_resolution_clock::now() - start ) / test_count;
+    printf("performances : %f GFlops\n", double(size)/toc);
+    printf("performances : %f GBs\n", double(datasize)/toc);
 
     return hpx::finalize();
 }
@@ -145,6 +149,10 @@ int main(int argc, char* argv[])
     ("grain_factor"
     , boost::program_options::value<std::size_t>()->default_value(1)
     , "number of tasks per thread (default: 10)")
+
+    ("unroll_factor"
+    , boost::program_options::value<int>()->default_value(10) // for overall time of 10 ms
+    , "number of iterations to be merged  (default: 10)")
     ;
 
     return hpx::init(cmdline, argc, argv, cfg);

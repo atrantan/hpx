@@ -65,58 +65,57 @@ boost::uint64_t spmv_coarray( hpx::parallel::spmd_block & block
                             , spmatrix const & a
                             , std::vector<double> & x
                             , hpx::coarray<double,1> & y
-                            , int test_count)
+                            , int test_count
+                            , int unroll_factor)
 {
     std::vector<boost::uint64_t> time;
     auto localities = hpx::find_all_localities();
     std::size_t N = localities.size();
 
+    int rank = block.rank();
+    int begin = a.begins_[rank];
+    int chunksize = a.sizes_[rank];
+
+    double * out = y.data(_).data();
+
+    const int * row  = a.rows_.data() + begin;
+    const int * idx  = a.indices_.data() + *row - 1;
+    const double * val = a.values_.data() + *row - 1;
+
     boost::uint64_t start = hpx::util::high_resolution_clock::now();
     for (int iter = 0; iter != test_count; ++iter)
     {
-        // boost::uint64_t start = hpx::util::high_resolution_clock::now();
+        // for (int i = 0; i < chunksize; i++, row++, out++)
         // {
-            int rank = block.rank();
-            int begin = a.begins_[rank];
-            int chunksize = a.sizes_[rank];
-
-            double * out = y.data(_).data();
-
-            const int * row  = a.rows_.data() + begin;
-            const int * idx  = a.indices_.data() + *row - 1;
-            const double * val = a.values_.data() + *row - 1;
-
-            // for (int i = 0; i < chunksize; i++, row++, out++)
-            // {
-            //     double tmp = 0.;
-            //     int end = *(row + 1);
-            //     for ( int o = *row; o < end;  o++, val++, idx++)
-            //     {
-            //         tmp += *val * x[*idx - 1];
-            //     }
-            //     *out = tmp;
-            // }
-
-            char transa('N');
-            mkl_dcsrgemv( &transa
-                        , &chunksize
-                        , val
-                        , row
-                        , idx
-                        , x.data()
-                        , out
-                        );
+        //     double tmp = 0.;
+        //     int end = *(row + 1);
+        //     for ( int o = *row; o < end;  o++, val++, idx++)
+        //     {
+        //         tmp += *val * x[*idx - 1];
+        //     }
+        //     *out = tmp;
         // }
-        // time.push_back( hpx::util::high_resolution_clock::now() - start );
-    }
-    block.barrier_sync("spmv");
-    return ( hpx::util::high_resolution_clock::now() - start ) / test_count;
 
-    // return hpx::detail::median(time.begin(),time.end());
+        char transa('N');
+        mkl_dcsrgemv( &transa
+                    , &chunksize
+                    , val
+                    , row
+                    , idx
+                    , x.data()
+                    , out
+                    );
+
+        if( !( (iter + 1) % unroll_factor) )
+        {
+            block.barrier_sync("spmv" + iter);
+        }
+    }
+    return ( hpx::util::high_resolution_clock::now() - start ) / test_count;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void image_coarray( hpx::parallel::spmd_block block, std::string filename, int test_count)
+void image_coarray( hpx::parallel::spmd_block block, std::string filename, int test_count, int unroll_factor)
 {
     spmatrix a(filename);
 
@@ -126,7 +125,7 @@ void image_coarray( hpx::parallel::spmd_block block, std::string filename, int t
     std::size_t size = 2 * a.nnz_;
     std::size_t datasize = (a.nnz_ + 2*a.m_)*sizeof(double);
 
-    boost::uint64_t toc = spmv_coarray(block,a,x,y,test_count);
+    boost::uint64_t toc = spmv_coarray(block,a,x,y,test_count,unroll_factor);
     printf("performances : %f GFlops\n", double(size)/toc);
     printf("performances : %f GBs\n", double(datasize)/toc);
 }
@@ -137,6 +136,7 @@ int hpx_main(boost::program_options::variables_map& vm)
 {
     std::string filename = vm["filename"].as<std::string>();
     int test_count       = vm["test_count"].as<int>();
+    int unroll_factor    = vm["unroll_factor"].as<int>();
 
     // verify that input is within domain of program
     if (test_count == 0 || test_count < 0) {
@@ -146,7 +146,7 @@ int hpx_main(boost::program_options::variables_map& vm)
     image_coarray_action act;
 
     auto localities = hpx::find_all_localities();
-    hpx::parallel::define_spmd_block( localities, act, filename, test_count).get();
+    hpx::parallel::define_spmd_block( localities, act, filename, test_count, unroll_factor).get();
 
     return hpx::finalize();
 }
@@ -169,6 +169,10 @@ int main(int argc, char* argv[])
     ("test_count"
     , boost::program_options::value<int>()->default_value(100) // for overall time of 10 ms
     , "number of tests to be averaged (default: 100)")
+
+    ("unroll_factor"
+    , boost::program_options::value<int>()->default_value(10) // for overall time of 10 ms
+    , "number of iterations to be merged  (default: 10)")
     ;
 
     return hpx::init(cmdline, argc, argv, cfg);
