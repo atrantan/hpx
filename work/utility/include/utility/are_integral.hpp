@@ -11,18 +11,17 @@
 
 namespace hpx {  namespace detail {
 
+template<bool ...>
+struct bools;
+
 template<typename ... T>
 struct are_integral
-{
-    template<bool ...>
-    struct bools;
-
-    using type = std::is_same< bools<true, std::is_integral<T>::value ...>
-                             , bools<std::is_integral<T>::value ...,true >
-                             >;
-
-    static constexpr bool value = type::value;
-};
+: public std::integral_constant< bool
+                               , std::is_same< bools<true, std::is_integral<T>::value ...>
+                                             , bools<std::is_integral<T>::value ...,true >
+                                             >::value
+                               >
+{};
 
 }}
 
