@@ -8,6 +8,7 @@
 #define STENCIL_VIEW_HPP
 
 #include <vector>
+#include <array>
 #include <initializer_list>
 #include <iostream>
 
@@ -15,6 +16,8 @@
 #include <hpx/runtime/serialization/serialize.hpp>
 
 #include <stencil_view/stencil_boundary_iterator.hpp>
+
+#include <utility/make_index_sequence.hpp>
 
 namespace hpx {
 
@@ -30,6 +33,28 @@ namespace hpx {
         using vector_iterator = typename std::vector<T>::iterator;
         using list_type = std::initializer_list<std::size_t>;
 
+    private:
+        template<std::size_t... I>
+        void fill_basis( std::array<std::size_t,N> const & sizes
+                       , std::array<std::size_t,N+1> & basis
+                       , hpx::detail::integer_sequence<std::size_t, I...>
+                       ) const
+        {
+            basis[0] = 1;
+
+            std::size_t  tmp = 1;
+            auto in  = sizes.begin();
+
+            (void)std::initializer_list<int>
+            { ( static_cast<void>(
+                  basis[I+1] = tmp *= *in
+                , in++
+                )
+                , 0
+              )...
+            };
+        }
+
     public:
         using iterator = typename hpx::stencil_boundary_iterator<value_type,N>;
 
@@ -37,34 +62,17 @@ namespace hpx {
         : begin_(nullptr)
         {}
 
-        explicit stencil_boundary( vector_iterator && begin
-                                  , list_type && sw_sizes
-                                  , list_type const & hw_sizes
+        explicit stencil_boundary(  vector_iterator && begin
+                                  , std::array<std::size_t,N> const & sw_sizes
+                                  , std::array<std::size_t,N> const & hw_sizes
                                   )
         : begin_( begin )
         {
+            using indices = typename hpx::detail::make_index_sequence<N>::type;
+
 // Generate two mixed radix basis
-            sw_basis_[0] = 1;
-            hw_basis_[0] = 1;
-
-            std::size_t  tmp1 = 1;
-            auto out1  = sw_basis_.begin() + 1;
-
-            for( std::size_t i : sw_sizes  )
-            {
-                *out1 = tmp1 *= i;
-                ++out1;
-            }
-
-            std::size_t  tmp2 = 1;
-            auto & sizes = hw_sizes.size() ? hw_sizes : sw_sizes;
-            auto out2   = hw_basis_.begin() + 1;
-
-            for( std::size_t i : sizes )
-            {
-                *out2 = tmp2 *= i;
-                ++out2;
-            }
+            fill_basis(hw_sizes, hw_basis_, indices() );
+            fill_basis(sw_sizes, sw_basis_, indices() );
         }
 
     public:
@@ -99,10 +107,26 @@ namespace hpx {
         using list_type = std::initializer_list<std::size_t>;
 
     public:
-
         using boundary_type = stencil_boundary<T,N>;
 
         stencil_view(list_type && dimemsions_size = {})
+        : minimum_vector_size_(N > 0 ? 1 : 0), has_sizes_( dimemsions_size.size() )
+        {
+            if ( has_sizes() )
+            {
+                HPX_ASSERT_MSG( dimemsions_size.size() == N, "**Stencil error** : Sizes defined for stencil doesn't match the stencil dimension" );
+
+                auto dsize = dimemsions_size.begin();
+                for( auto & i : hw_sizes_)
+                {
+                    i = *dsize;
+                    minimum_vector_size_ *=  i;
+                    dsize++;
+                }
+            }
+        }
+
+        stencil_view(std::array<std::size_t,N> && dimemsions_size)
         : hw_sizes_(dimemsions_size),  minimum_vector_size_(N > 0 ? 1 : 0)
         {
             for( auto const & i : hw_sizes_)
@@ -116,10 +140,15 @@ namespace hpx {
             return minimum_vector_size_;
         }
 
+        inline bool has_sizes() const
+        {
+            return has_sizes_;
+        }
+
         template <typename ...I>
         boundary_type get_boundary(vector_iterator begin, vector_iterator end, I ... i) const
         {
-            HPX_ASSERT_MSG( hw_sizes_.size(), "**Stencil error** : Cannot retrieve any boundary from stencil defined without sizes" );
+            HPX_ASSERT_MSG( has_sizes(), "**Stencil error** : Cannot retrieve any boundary from stencil defined without sizes" );
 
 // Check that the used space is valid for combined sizes
             HPX_ASSERT_MSG( minimum_vector_size_ <= std::distance(begin,end)
@@ -146,17 +175,18 @@ namespace hpx {
             };
 
             auto iter = hw_sizes_.begin();
-            list_type sw_sizes = { ( i!=0 ? (iter++,1) : *(iter++) ) ... };
+            std::array<std::size_t,N> sw_sizes = { ( i!=0 ? (iter++,1) : *(iter++) ) ... };
 
-            return boundary_type( begin + offset
-                                 , std::move(sw_sizes)
+            return boundary_type(  begin + offset
+                                 , sw_sizes
                                  , hw_sizes_
                                  );
         }
 
     private:
-        list_type hw_sizes_;
+        std::array<std::size_t,N> hw_sizes_;
         std::size_t minimum_vector_size_;
+        bool has_sizes_;
     };
 }
 

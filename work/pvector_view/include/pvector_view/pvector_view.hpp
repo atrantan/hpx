@@ -21,6 +21,7 @@
 
 #include <utility/last_element.hpp>
 #include <utility/are_integral.hpp>
+#include <utility/make_index_sequence.hpp>
 
 #include <stencil_view/stencil_view.hpp>
 #include <spmd_block/spmd_block.hpp>
@@ -74,6 +75,28 @@ namespace hpx {
         using list_type = std::initializer_list<std::size_t>;
         using stencil_type = hpx::stencil_view<T,N>;
 
+        template<std::size_t... I>
+        void fill_basis( list_type const & sizes
+                       , std::array<std::size_t,N+1> & basis
+                       , std::size_t numlocs
+                       , hpx::detail::integer_sequence<std::size_t, I...>
+                       ) const
+        {
+            basis[0] = 1;
+
+            std::size_t  tmp = 1;
+            auto in  = sizes.begin();
+
+            (void)std::initializer_list<int>
+            { ( static_cast<void>(
+                  basis[I+1] = tmp *= ( *in != std::size_t(-1) ? *in : numlocs )
+                , in++
+                )
+                , 0
+              )...
+            };
+        }
+
     public:
         using iterator
         = typename hpx::pvector_view_iterator<value_type,N,stencil_type>;
@@ -105,8 +128,8 @@ namespace hpx {
 
         explicit pvector_view( segment_iterator && begin
                              , segment_iterator && end
-                             , list_type && sw_sizes
-                             , list_type && hw_sizes = {}
+                             , list_type sw_sizes
+                             , list_type hw_sizes = {}
                              , bool is_automatic_size = true
                              , stencil_type && stencil = {}
                              , std::size_t numlocs = hpx::get_num_localities_sync()
@@ -117,41 +140,28 @@ namespace hpx {
         , stencil_(stencil)
         , rank_(rank)
         {
+            using indices = typename hpx::detail::make_index_sequence<N>::type;
+
+// Physical sizes is equal to logical sizes if physical sizes are not defined
+            list_type & hw_sizes_ = hw_sizes.size() ? hw_sizes : sw_sizes;
+
 // Check that sizes of the view are valid regarding its dimension
             HPX_ASSERT_MSG(sw_sizes.size() == N
                           ,"**CoArray Error** : Defined sizes must match the coarray dimension"
                           );
 
 // Generate two mixed radix basis
-            sw_basis_[0] = 1;
-            hw_basis_[0] = 1;
-
-            std::size_t  tmp1 = 1;
-            auto out1  = sw_basis_.begin() + 1;
-
-            for( std::size_t i : sw_sizes  )
-            {
-                *out1 = tmp1 *= ( i != std::size_t(-1) ? i : numlocs );
-                ++out1;
-            }
-
-            std::size_t  tmp2 = 1;
-            auto & sizes = hw_sizes.size() ? hw_sizes : sw_sizes;
-            auto out2   = hw_basis_.begin() + 1;
-
-            for( std::size_t i : sizes )
-            {
-                *out2 = tmp2 *= ( i != std::size_t(-1) ? i : numlocs );
-                ++out2;
-            }
+            fill_basis(hw_sizes_, hw_basis_, numlocs, indices() );
+            fill_basis(sw_sizes, sw_basis_, numlocs, indices() );
 
 // Check that combined sizes doesn't overflow the used space
-            HPX_ASSERT_MSG( tmp2 <= std::distance(begin,end)
+            HPX_ASSERT_MSG( hw_basis_[N] <= std::distance(begin,end)
                           , "**CoArray Error** : Space dedicated to the described view is too small"
                           );
         }
 
     private:
+
         template<typename... I>
         inline std::size_t offset_solver(I ... index) const
         {
@@ -285,6 +295,20 @@ namespace hpx {
         using pvector_iterator = hpx::vector_iterator<T>;
         using traits = typename hpx::traits::segmented_iterator_traits<pvector_iterator>;
         using stencil_type = hpx::stencil_view<T,N>;
+        using indices = typename hpx::detail::make_index_sequence<N>::type;
+
+    private:
+        template<std::size_t... I>
+        std::array<std::size_t,N>  make_default_sizes( std::size_t first_size
+                                                     , hpx::detail::integer_sequence<std::size_t, I...>
+                                                     ) const
+        {
+            std::size_t k = 0;
+            return { ( I
+                     , (k++>0) ? 1ul : first_size
+                     )...
+                   };
+        }
 
     public:
         coarray()
@@ -336,12 +360,15 @@ namespace hpx {
             else
                 vector_.connect_to_sync(name + "_hpx_coarray");
 
+            if( ! stencil.has_sizes() )
+                stencil = hpx::stencil_view<T,N>( make_default_sizes(init_value.size(), indices()) );
+
             view = base_type( vector_.begin()
                             , vector_.end()
                             , std::forward<list_type>(codimensions)
                             , std::forward<list_type>(codimensions)
                             , is_automatic_size
-                            , std::forward<stencil_type>(stencil)
+                            , std::move(stencil)
                             , localities.size()
                             , block.rank()
                             );

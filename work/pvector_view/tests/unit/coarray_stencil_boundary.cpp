@@ -31,8 +31,15 @@ constexpr auto image_coarray = hpx::make_action(
                                , hpx::stencil_view<double,2>({4,4})
                                };
 
+    hpx::coarray<double,2> b = { block
+                               , "b"
+                               , {height,width}
+                               , hpx::partition<double>(16, 0.0)
+                               };
+
 
     a(2,1).get_boundary(0,-1) = a(2,0).get_boundary(0,1);
+    b(2,1).get_boundary(0,-1) = b(2,0).get_boundary(0,1);
 
 });
 
