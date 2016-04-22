@@ -34,8 +34,8 @@ namespace hpx {
         local_pvector_view_iterator()
         {}
 
-        local_pvector_view_iterator(BaseIter const& it, BaseIter const& end)
-        : base_type(it), end_(end)
+        explicit local_pvector_view_iterator(BaseIter && it, BaseIter && end)
+        : base_type( std::forward<BaseIter>(it) ), end_( std::forward<BaseIter>(end) )
         {
             satisfy_predicate();
         }

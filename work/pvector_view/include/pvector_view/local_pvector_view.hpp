@@ -16,6 +16,7 @@ namespace hpx {
     template<typename T, std::size_t N, typename Derived = void>
     struct local_pvector_view : public pvector_view<T,N,Derived>
     {
+    private:
         using base_type = pvector_view<T,N,Derived>;
         using base_iterator = typename base_type::iterator;
 
