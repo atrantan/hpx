@@ -95,11 +95,9 @@ namespace hpx {
             return *t_;
         }
 
-        std::size_t distance_to(stencil_boundary_iterator const& other) const
+        std::ptrdiff_t distance_to(stencil_boundary_iterator const& other) const
         {
-            return other.count_ > count_
-            ? other.count_ - count_
-            : count_ - other.count_;
+            return other.count_ - count_;
         }
 
         vector_iterator t_, begin_;
