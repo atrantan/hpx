@@ -102,11 +102,9 @@ namespace hpx {
             return hpx::detail::view_element<T,Stencil>( t_, stencil_ );
         }
 
-        std::size_t distance_to(pvector_view_iterator const& other) const
+        std::ptrdiff_t distance_to(pvector_view_iterator const& other) const
         {
-            return other.count_ > count_
-            ? other.count_ - count_
-            : count_ - other.count_;
+            return other.count_ - count_;
         }
 
         segment_iterator t_, begin_;
