@@ -24,8 +24,6 @@ constexpr auto image_coarray = hpx::make_action(
 {
     using const_iterator = typename std::vector<double>::const_iterator;
 
-    auto localities = block.find_all_localities();
-
     const std::size_t height = 16;
     const std::size_t width  = 16;
 
@@ -37,7 +35,7 @@ constexpr auto image_coarray = hpx::make_action(
     hpx::coarray<double,2> out = { block, "out", {height,width}, hpx::partition<double>(local_height * local_width) };
 
     // Ensure that only one locality is putting data into the different partitions
-    if(hpx::find_here() == localities[0])
+    if(block.this_image() == 0)
     {
         std::size_t idx = 0;
 
@@ -95,7 +93,7 @@ constexpr auto image_coarray = hpx::make_action(
     ).wait();
 
     // Test the result of the computation
-    if(hpx::find_here() == localities[0])
+    if(block.this_image() == 0)
     {
         int idx = 0;
         std::vector<double> result(local_height * local_width);

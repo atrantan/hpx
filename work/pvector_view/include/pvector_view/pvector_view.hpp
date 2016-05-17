@@ -105,40 +105,37 @@ namespace hpx {
         : begin_(v_begin)
         {}
 
-        explicit pvector_view( pvector_iterator && v_begin
-                             , pvector_iterator && v_end
+        explicit pvector_view( hpx::parallel::spmd_block & block
+                             , pvector_iterator && v_begin
+                             , pvector_iterator && v_last
                              , list_type && sw_sizes
                              , list_type && hw_sizes = {}
-                             , bool is_automatic_size = true
                              , stencil_type && stencil = {}
-                             , std::size_t numlocs = hpx::get_num_localities_sync()
-                             , std::size_t rank = 0
+                             , bool is_automatic_size = false
                              )
-        : pvector_view( traits::segment(std::forward<pvector_iterator>(v_begin))
-                      , traits::segment(std::forward<pvector_iterator>(v_end))
+        : pvector_view( block
+                      , traits::segment(std::forward<pvector_iterator>(v_begin))
+                      , traits::segment(std::forward<pvector_iterator>(v_last))
                       , std::forward<list_type>(sw_sizes)
                       , std::forward<list_type>(hw_sizes)
-                      , is_automatic_size
                       , std::forward<stencil_type>(stencil)
-                      , numlocs
-                      , rank
+                      , is_automatic_size
                       )
         {}
 
 
-        explicit pvector_view( segment_iterator && begin
-                             , segment_iterator && end
+        explicit pvector_view( hpx::parallel::spmd_block & block
+                             , segment_iterator && begin
+                             , segment_iterator && last
                              , list_type sw_sizes
                              , list_type hw_sizes = {}
-                             , bool is_automatic_size = true
                              , stencil_type && stencil = {}
-                             , std::size_t numlocs = hpx::get_num_localities_sync()
-                             , std::size_t rank = 0
+                             , bool is_automatic_size = false
                              )
         : begin_( begin )
-        , is_automatic_subscript_allowed(is_automatic_size)
         , stencil_(stencil)
-        , rank_(rank)
+        , rank_( block.this_image() )
+        , is_automatic_subscript_allowed(is_automatic_size)
         {
             using indices = typename hpx::detail::make_index_sequence<N>::type;
 
@@ -150,12 +147,14 @@ namespace hpx {
                           ,"**CoArray Error** : Defined sizes must match the coarray dimension"
                           );
 
+            std::size_t numlocs = block.get_num_images();
+
 // Generate two mixed radix basis
             fill_basis(hw_sizes_, hw_basis_, numlocs, indices() );
             fill_basis(sw_sizes, sw_basis_, numlocs, indices() );
 
 // Check that combined sizes doesn't overflow the used space
-            HPX_ASSERT_MSG( hw_basis_[N] <= std::distance(begin,end)
+            HPX_ASSERT_MSG( hw_basis_[N] <= std::distance(begin,last)
                           , "**CoArray Error** : Space dedicated to the described view is too small"
                           );
         }
@@ -278,9 +277,9 @@ namespace hpx {
     private:
         std::array< std::size_t, N+1 > sw_basis_, hw_basis_;
         segment_iterator begin_;
-        bool is_automatic_subscript_allowed;
         stencil_type stencil_;
         std::size_t rank_;
+        bool is_automatic_subscript_allowed;
     };
 
 
@@ -313,7 +312,7 @@ namespace hpx {
     public:
         coarray()
         : vector_()
-        , hpx::pvector_view<T,N,coarray>( traits::segment(vector_.begin()) )
+        , base_type( traits::segment(vector_.begin()) )
         {}
 
         coarray( hpx::parallel::spmd_block & block
@@ -323,7 +322,7 @@ namespace hpx {
                , hpx::stencil_view<T,N> && stencil = {}
                )
         : vector_()
-        , hpx::pvector_view<T,N,coarray>( traits::segment(vector_.begin()) )
+        , base_type( traits::segment(vector_.begin()) )
         {
 // Used to access base members
             base_type & view (*this);
@@ -331,11 +330,9 @@ namespace hpx {
 
             bool is_automatic_size = ( *(codimensions.end() -1) == std::size_t(-1) );
 
-            std::vector< hpx::id_type > localities = block.find_all_localities();
-
-            if ( hpx::find_here() == localities[0] )
+            if ( block.this_image() == 0 )
             {
-                std::size_t numlocs = localities.size();
+                std::size_t numlocs = block.get_num_images();
                 std::size_t size = N > 0 ? 1 : 0;
 
                 for( auto const & i : codimensions)
@@ -348,6 +345,7 @@ namespace hpx {
                 if(N > 0)
                     n = is_automatic_size ? size/numlocs : 1;
 
+                std::vector< hpx::id_type > localities = block.find_all_localities();
 
                 vector_ = hpx::partitioned_vector<T>( elt_size*size
                     , size ? init_value[0] : T(0)
@@ -363,14 +361,13 @@ namespace hpx {
             if( ! stencil.has_sizes() )
                 stencil = hpx::stencil_view<T,N>( make_default_sizes(init_value.size(), indices()) );
 
-            view = base_type( vector_.begin()
+            view = base_type( block
+                            , vector_.begin()
                             , vector_.end()
                             , std::forward<list_type>(codimensions)
                             , std::forward<list_type>(codimensions)
-                            , is_automatic_size
                             , std::move(stencil)
-                            , localities.size()
-                            , block.rank()
+                            , is_automatic_size
                             );
         }
 

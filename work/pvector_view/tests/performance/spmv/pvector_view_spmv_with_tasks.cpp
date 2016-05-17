@@ -71,10 +71,9 @@ boost::uint64_t spmv_coarray( hpx::parallel::spmd_block & block
                             , int grain_factor
                             , int unroll_factor)
 {
-    auto localities = hpx::find_all_localities();
-    std::size_t N = localities.size();
+    std::size_t N = block.get_num_images();
 
-    int rank = block.rank();
+    int rank = block.this_image();
     int begin = a.begins_[rank];
     int chunksize = a.sizes_[rank];
 

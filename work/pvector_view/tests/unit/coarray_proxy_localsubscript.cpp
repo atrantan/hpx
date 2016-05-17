@@ -23,8 +23,7 @@ constexpr auto image_coarray = hpx::make_action(
     using hpx::_;
     using const_iterator = typename std::vector<double>::const_iterator;
 
-    auto localities = block.find_all_localities();
-    std::size_t numlocs = localities.size();
+    std::size_t numlocs = block.get_num_images();
 
     const std::size_t height = 32;
     const std::size_t width  = 4;
@@ -43,7 +42,7 @@ constexpr auto image_coarray = hpx::make_action(
 
     block.barrier_sync("");
 
-    if(hpx::find_here() == localities[0])
+    if(block.this_image() == 0)
     {
         for (std::size_t k = 0; k<numlocs; k++)
         {

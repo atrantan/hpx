@@ -135,7 +135,12 @@ namespace hpx { namespace parallel{
             return localities_;
         }
 
-        int rank() const
+        std::size_t get_num_images() const
+        {
+            return localities_.size();
+        }
+
+        std::size_t this_image() const
         {
             using const_iterator = typename std::vector<hpx::id_type>::const_iterator;
 
