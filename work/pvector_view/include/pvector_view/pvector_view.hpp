@@ -375,6 +375,52 @@ namespace hpx {
         hpx::partitioned_vector<T> vector_;
     };
 
+    template <typename T, std::size_t N = 1>
+    struct coarray_view : public hpx::pvector_view< T,N,coarray_view<T,N>>
+    {
+    private:
+        using base_type = hpx::pvector_view<T,N,coarray_view>;
+        using pvector_iterator = hpx::vector_iterator<T>;
+        using segment_iterator = typename pvector_iterator::segment_iterator;
+        using list_type = std::initializer_list<std::size_t>;
+        using stencil_type = hpx::stencil_view<T,N>;
+
+    public:
+      coarray_view( hpx::parallel::spmd_block & block
+                  , segment_iterator && begin
+                  , list_type && sw_sizes
+                  , list_type && hw_sizes
+                  , stencil_type && stencil = {}
+                  )
+      : base_type( begin + 0 )
+      {
+          // Used to access base members
+          base_type & view (*this);
+
+          bool is_automatic_size = ( *(hw_sizes.end() -1) == std::size_t(-1) );
+
+          std::size_t numlocs = block.get_num_images();
+          std::size_t size = N > 0 ? 1 : 0;
+
+          // Compute dummy offset to pass the overflow checking in pvector_view
+          for( auto const & i : hw_sizes)
+          {
+              size *= (i != std::size_t(-1) ? i : numlocs);
+          }
+
+
+          view = base_type(  block
+                           , begin + 0
+                           , begin + size
+                           , std::move(sw_sizes)
+                           , std::move(hw_sizes)
+                           , std::move(stencil)
+                           , is_automatic_size
+                           );
+      }
+
+    };
+
 }
 
 #endif

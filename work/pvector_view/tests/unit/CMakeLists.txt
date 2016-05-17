@@ -12,6 +12,7 @@ set(tests
     coarray_stencil_boundary
     coarray_proxy_operation
     coarray_proxy_localsubscript
+    coarray_view
    )
 
 foreach(test ${tests})
