@@ -111,7 +111,6 @@ namespace hpx {
                              , list_type && sw_sizes
                              , list_type && hw_sizes = {}
                              , stencil_type && stencil = {}
-                             , bool is_automatic_size = false
                              )
         : pvector_view( block
                       , traits::segment(std::forward<pvector_iterator>(v_begin))
@@ -119,7 +118,6 @@ namespace hpx {
                       , std::forward<list_type>(sw_sizes)
                       , std::forward<list_type>(hw_sizes)
                       , std::forward<stencil_type>(stencil)
-                      , is_automatic_size
                       )
         {}
 
@@ -130,14 +128,14 @@ namespace hpx {
                              , list_type sw_sizes
                              , list_type hw_sizes = {}
                              , stencil_type && stencil = {}
-                             , bool is_automatic_size = false
                              )
         : begin_( begin )
         , stencil_(stencil)
         , rank_( block.this_image() )
-        , is_automatic_subscript_allowed(is_automatic_size)
         {
             using indices = typename hpx::detail::make_index_sequence<N>::type;
+
+            is_automatic_subscript_allowed = ( *(sw_sizes.end() -1) == std::size_t(-1) );
 
 // Physical sizes is equal to logical sizes if physical sizes are not defined
             list_type & hw_sizes_ = hw_sizes.size() ? hw_sizes : sw_sizes;
@@ -153,8 +151,17 @@ namespace hpx {
             fill_basis(hw_sizes_, hw_basis_, numlocs, indices() );
             fill_basis(sw_sizes, sw_basis_, numlocs, indices() );
 
+// Compute the needed size for the described view
+            std::size_t limit = 0, idx = 0;
+            for(std::size_t const & i : sw_sizes)
+            {
+                std::size_t value = (i != std::size_t(-1) ? i : numlocs);
+                limit += (value-1) * hw_basis_[idx];
+                idx++;
+            }
+
 // Check that combined sizes doesn't overflow the used space
-            HPX_ASSERT_MSG( hw_basis_[N] <= std::distance(begin,last)
+            HPX_ASSERT_MSG( limit <= std::distance(begin,last)
                           , "**CoArray Error** : Space dedicated to the described view is too small"
                           );
         }
@@ -363,11 +370,10 @@ namespace hpx {
 
             view = base_type( block
                             , vector_.begin()
-                            , vector_.end()
+                            , vector_.end() - 1
                             , std::forward<list_type>(codimensions)
                             , std::forward<list_type>(codimensions)
                             , std::move(stencil)
-                            , is_automatic_size
                             );
         }
 
@@ -375,52 +381,9 @@ namespace hpx {
         hpx::partitioned_vector<T> vector_;
     };
 
-    template <typename T, std::size_t N = 1>
-    struct coarray_view : public hpx::pvector_view< T,N,coarray_view<T,N>>
-    {
-    private:
-        using base_type = hpx::pvector_view<T,N,coarray_view>;
-        using pvector_iterator = hpx::vector_iterator<T>;
-        using segment_iterator = typename pvector_iterator::segment_iterator;
-        using list_type = std::initializer_list<std::size_t>;
-        using stencil_type = hpx::stencil_view<T,N>;
-
-    public:
-      coarray_view( hpx::parallel::spmd_block & block
-                  , segment_iterator && begin
-                  , list_type && sw_sizes
-                  , list_type && hw_sizes
-                  , stencil_type && stencil = {}
-                  )
-      : base_type( begin + 0 )
-      {
-          // Used to access base members
-          base_type & view (*this);
-
-          bool is_automatic_size = ( *(hw_sizes.end() -1) == std::size_t(-1) );
-
-          std::size_t numlocs = block.get_num_images();
-          std::size_t size = N > 0 ? 1 : 0;
-
-          // Compute dummy offset to pass the overflow checking in pvector_view
-          for( auto const & i : hw_sizes)
-          {
-              size *= (i != std::size_t(-1) ? i : numlocs);
-          }
-
-
-          view = base_type(  block
-                           , begin + 0
-                           , begin + size
-                           , std::move(sw_sizes)
-                           , std::move(hw_sizes)
-                           , std::move(stencil)
-                           , is_automatic_size
-                           );
-      }
-
-    };
-
+    // Coarray view
+    template<typename T, std::size_t N>
+    using coarray_view = pvector_view<T,N>;
 }
 
 #endif
