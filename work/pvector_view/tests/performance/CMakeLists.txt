@@ -6,6 +6,8 @@
 # Require a recent version of cmake
 cmake_minimum_required(VERSION 2.8.4 FATAL_ERROR)
 
+set(CMAKE_BUILD_TYPE "Release")
+
 # add_subdirectory(for_each)
 add_subdirectory(spmv)
 add_subdirectory(transpose)
