@@ -1,0 +1,149 @@
+\documentclass[svgnames]{beamer}
+\usepackage{listings}
+\usepackage[utf8x]{inputenc}
+\usepackage{color}
+\usepackage{xcolor}
+\usepackage[frenchb,english]{babel}
+\usepackage{standalone}
+\usepackage{tikz}
+\usepackage{pgfplots}
+
+\pgfplotsset{compat=1.11}
+
+\definecolor{metared}{rgb}{0.64,0.13,0.11}
+\definecolor{hlcolor}{rgb}{0.88,0.88,0.88}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{ %
+  language=C++,                % the language of the code
+  basicstyle=\ttfamily\tiny,           % the size of the fonts that are used for the code
+  showspaces=false,               % show spaces adding particular underscores
+  showstringspaces=false,         % underline spaces within strings
+  showtabs=false,                 % show tabs within strings adding particular underscores
+  frame=none,                     % adds a frame around the code
+  tabsize=2,                      % sets default tabsize to 2 spaces
+  captionpos=b,                   % sets the caption-position to bottom
+  breaklines=true,                % sets automatic line breaking
+  breakatwhitespace=false,        % sets if automatic breaks should only happen at whitespace
+  xleftmargin=\fboxsep,
+  xrightmargin=-\fboxsep,
+  firstnumber=1,
+  title=\lstname,                   % show the filename of files included with \lstinputlisting;
+  keywordstyle=\color{blue},          % keyword style
+  commentstyle=\color{dkgreen},       % comment style
+  % stringstyle=\color{mauve},         % string literal style
+  escapeinside={\%*}{*)},            % if you want to add a comment within your code
+  morekeywords={*,...},               % if you want to add more keywords to the set
+  escapechar={@},
+  aboveskip=0bp,
+  belowskip=0bp
+}
+
+\title{Explore Future/Promise based barrier algorithms}
+\author{Antoine Tran Tan \and Hartmut Kaiser}
+\institute{Louisiana State University\\Center for Computation and Technology - Stellar Group}
+\date{\footnotesize{May 2016}}
+
+\begin{document}
+
+%=============================================
+\begin{frame}
+\titlepage
+\end{frame}
+%=============================================
+\begin{frame}
+\frametitle{Barrier Algorithms - Overhead evaluation in ns - vector size = 10}
+\begin{center}
+\begin{tikzpicture}[scale = 0.8]
+\pgfplotsset{grid style={thick,dashed,gray}}
+\pgfplotsset{minor grid style={dotted,gray}}
+\begin{axis}[xlabel=\footnotesize Number of localities,
+             ylabel=\footnotesize Overhead in ns,
+             grid=both,
+             minor tick num=1,
+             ymin=0,
+             xmin = 0,
+             legend pos=north west,
+             legend style={at={(1.02,1)}}]
+  \addplot[color=blue]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/barrier_algorithms_100/barrier_algorithms_10_policy=dissemination_scale_over_nlocs.dat};
+  \addlegendentry{\tiny{dissemination}}
+  \addplot[color=red]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/barrier_algorithms_100/barrier_algorithms_10_policy=central_scale_over_nlocs.dat};
+  \addlegendentry{\tiny{central}}
+  \addplot[color=dkgreen]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/barrier_algorithms_100/barrier_algorithms_10_policy=pairwise_scale_over_nlocs.dat};
+  \addlegendentry{\tiny{pairwise}}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+\end{frame}
+%=============================================
+\begin{frame}
+\frametitle{Barrier Algorithms - Overhead evaluation in ns - vector size = 100}
+\begin{center}
+\begin{tikzpicture}[scale = 0.8]
+\pgfplotsset{grid style={thick,dashed,gray}}
+\pgfplotsset{minor grid style={dotted,gray}}
+\begin{axis}[xlabel=\footnotesize Number of localities,
+             ylabel=\footnotesize Overhead in ns,
+             grid=both,
+             minor tick num=1,
+             ymin=0,
+             xmin = 0,
+             legend pos=north west,
+             legend style={at={(1.02,1)}}]
+  \addplot[color=blue]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/barrier_algorithms_100/barrier_algorithms_100_policy=dissemination_scale_over_nlocs.dat};
+  \addlegendentry{\tiny{dissemination}}
+  \addplot[color=red]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/barrier_algorithms_100/barrier_algorithms_100_policy=central_scale_over_nlocs.dat};
+  \addlegendentry{\tiny{central}}
+  \addplot[color=dkgreen]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/barrier_algorithms_100/barrier_algorithms_100_policy=pairwise_scale_over_nlocs.dat};
+  \addlegendentry{\tiny{pairwise}}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+\end{frame}
+%=============================================
+\begin{frame}
+\frametitle{Barrier Algorithms - Overhead evaluation in ns - vector size = 1000}
+\begin{center}
+\begin{tikzpicture}[scale = 0.8]
+\pgfplotsset{grid style={thick,dashed,gray}}
+\pgfplotsset{minor grid style={dotted,gray}}
+\begin{axis}[xlabel=\footnotesize Number of localities,
+             ylabel=\footnotesize Overhead in ns,
+             grid=both,
+             minor tick num=1,
+             ymin=0,
+             xmin = 0,
+             legend pos=north west,
+             legend style={at={(1.02,1)}}]
+  \addplot[color=blue]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/barrier_algorithms_100/barrier_algorithms_1000_policy=dissemination_scale_over_nlocs.dat};
+  \addlegendentry{\tiny{dissemination}}
+  \addplot[color=red]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/barrier_algorithms_100/barrier_algorithms_1000_policy=central_scale_over_nlocs.dat};
+  \addlegendentry{\tiny{central}}
+  \addplot[color=dkgreen]
+  plot[smooth,mark=diamond*,mark size=1.5pt] file
+  {perfs/barrier_algorithms_100/barrier_algorithms_1000_policy=pairwise_scale_over_nlocs.dat};
+  \addlegendentry{\tiny{pairwise}}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+\end{frame}
+\end{document}

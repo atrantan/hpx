@@ -18,23 +18,32 @@ if (HPX_FOUND)
   link_directories(${HPX_LIBRARY_DIR})
 
 include_directories(make_action/include)
-include_directories(wait_images/include)
 include_directories(utility/include)
-include_directories(stencil_view/include)
+# include_directories(stencil_view/include)
 include_directories(spmd_block/include)
+include_directories(remote_promise/include)
+include_directories(barrier_algorithms/include)
 
 # Add programs here
 add_subdirectory(spmd_block)
-add_subdirectory(pvector_view)
+# add_subdirectory(pvector_view)
 # add_subdirectory(make_action)
-# add_subdirectory(wait_images)
 # add_subdirectory(stencil_view)
+add_subdirectory(barrier_algorithms)
+add_subdirectory(remote_promise)
+
+# add_custom_target(
+#     run_tests_and_plot_results
+#     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+#     COMMAND python ${CMAKE_SOURCE_DIR}/run.py ${CMAKE_SOURCE_DIR}
+#     COMMAND pdflatex ${CMAKE_SOURCE_DIR}/plot_results.tex
+# )
 
 add_custom_target(
-    run_tests_and_plot_results
+    run_tests_and_plot_barrier_results
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-    COMMAND python ${CMAKE_SOURCE_DIR}/run.py ${CMAKE_SOURCE_DIR}
-    # COMMAND pdflatex ${CMAKE_SOURCE_DIR}/plot_results.tex
+    COMMAND python ${CMAKE_SOURCE_DIR}/run_barrier_test.py
+    COMMAND pdflatex ${CMAKE_SOURCE_DIR}/plot_results.tex
 )
 
 endif()

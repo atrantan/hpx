@@ -18,6 +18,7 @@
 #include <hpx/include/components.hpp>
 
 #include <boost/thread/locks.hpp>
+#include <barrier_algorithms/barrier_algorithms.hpp>
 
 
 namespace hpx { namespace server
@@ -164,35 +165,27 @@ namespace hpx { namespace parallel{
             }
         }
 
+        template<typename Policy>
+        void barrier_sync(Policy const & p, std::string && bname ) const
+        {
+            hpx::custom_barrier_sync(p, localities_, std::move(bname) );
+        }
+
+        template<typename Policy>
+        hpx::future<void> barrier(Policy const & p, std::string && bname ) const
+        {
+            return hpx::custom_barrier( p, localities_, std::move(bname) );
+        }
+
+
         void barrier_sync( std::string && bname ) const
         {
-            barrier( std::move(bname) ).get();
+            hpx::custom_barrier_sync( localities_, std::move(bname) );
         }
 
         hpx::future<void> barrier( std::string && bname ) const
         {
-            std::size_t numlocs = localities_.size();
-            hpx::id_type here = hpx::find_here();
-
-            std::string barrier_name = bname + "_hpx_spmd_barrier";
-
-            if( here == localities_[0] )
-            {
-                // create the barrier, register it with AGAS
-                hpx::lcos::barrier b = hpx::new_<hpx::lcos::barrier>(here,numlocs);
-
-                b.register_as(barrier_name);
-
-                return b.wait_async().then(
-                        [b](hpx::future<void> f){ return f.get(); }
-                        );
-            }
-            else
-            {
-                hpx::lcos::barrier b;
-                b.connect_to(barrier_name);
-                return b.wait_async();
-            }
+            return hpx::custom_barrier( localities_, std::move(bname) );
         }
 
         hpx::future<void> wait(std::string && bname) const
