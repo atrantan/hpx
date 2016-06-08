@@ -33,29 +33,25 @@ def plot_scalability_2(apps, title,  xlabel, xlabel_range, ylabel, ylabel_range,
 	for app in apps:
 		for i in range(0, len(ylabel_range)):
 			datafile_n = "perfs/{0}/{0}_{1}={2}_unit={4}_scale_over_{3}.dat".format(app, ylabel, ylabel_range[i], xlabel, unit)
-			# datafile = open(datafile_n, 'w')
-
-			print datafile_n
+			datafile = open(datafile_n, 'w')
 
 			for x in xlabel_range:
-				# datafile.write("{0}".format(x))
-				# value_v = [];
-				# total_time = 0;
+				datafile.write("{0}".format(x))
+				value_v = [];
+				total_time = 0;
 				try:
 					dumpfile_n = dump_file_format.replace("#0", x)
 					dumpfile_n = dumpfile_n.replace("#1", ylabel_range[i])
 					dumpfile_n = "perfs/{0}/{0}_{1}.dump".format(app, dumpfile_n)
 
-					print dumpfile_n
-
 					# get value
-					# dumpfile = open(dumpfile_n)
-					# total_time = parse_file(dumpfile, "Time", unit)
+					dumpfile = open(dumpfile_n)
+					total_time = parse_file(dumpfile, "Time", unit)
 				except IOError:
 					total_time = 0
-				# datafile.write(" {0}".format(total_time))
-				# datafile.write("\n")
-	   #      datafile.close();
+				datafile.write(" {0}".format(total_time))
+				datafile.write("\n")
+	        datafile.close();
 
 barrier_policy = ["central","dissemination","pairwise"]
 nlocs = ['1', '2', '4', '6', '8', '10','12','14', '16']
@@ -76,7 +72,7 @@ for n in nlocs:
 		, dumpfile
 		)
 		print cmdline
-		# os.system(cmdline)
+		os.system(cmdline)
 
 # create dump directory
 dumpdir = 'perfs/barrier_algorithms_100'
@@ -94,28 +90,9 @@ for n in nlocs:
 		, dumpfile
 		)
 		print cmdline
-		# os.system(cmdline)
+		os.system(cmdline)
 
-# create dump directory
-dumpdir = 'perfs/barrier_algorithms_1000'
-if not os.path.exists(dumpdir):
-	print "creating "+dumpdir+" directory"
-	os.makedirs(dumpdir)
-
-# run benchmarks
-for n in nlocs:
-	for i in range(0, len(barrier_policy)):
-		dumpfile = dumpdir+"/barrier_algorithms_1000_policy={0}_nlocs={1}.dump".format(barrier_policy[i], n)
-
-		cmdline = "mpirun -np "+n+" ./bin/foreach_test -t 1 --vector_size 1000 --work_delay 1000000 --barrier_policy {0} > {1}".format(
-		  barrier_policy[i]
-		, dumpfile
-		)
-		print cmdline
-		# os.system(cmdline)
-
-
-plot_scalability_2(["barrier_algorithms_10","barrier_algorithms_100", "barrier_algorithms_1000"]
+plot_scalability_2(["barrier_algorithms_10","barrier_algorithms_100"]
 	                , "Overhead of barrier algorithm"
 		            , "nlocs", nlocs
 					, "policy", barrier_policy

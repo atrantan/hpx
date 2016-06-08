@@ -70,15 +70,15 @@
              legend style={at={(1.02,1)}}]
   \addplot[color=blue]
   plot[smooth,mark=diamond*,mark size=1.5pt] file
-  {perfs/barrier_algorithms_100/barrier_algorithms_10_policy=dissemination_scale_over_nlocs.dat};
+  {perfs/barrier_algorithms_10/barrier_algorithms_10_policy=dissemination_unit=ns_scale_over_nlocs.dat};
   \addlegendentry{\tiny{dissemination}}
   \addplot[color=red]
   plot[smooth,mark=diamond*,mark size=1.5pt] file
-  {perfs/barrier_algorithms_100/barrier_algorithms_10_policy=central_scale_over_nlocs.dat};
+  {perfs/barrier_algorithms_10/barrier_algorithms_10_policy=central_unit=ns_scale_over_nlocs.dat};
   \addlegendentry{\tiny{central}}
   \addplot[color=dkgreen]
   plot[smooth,mark=diamond*,mark size=1.5pt] file
-  {perfs/barrier_algorithms_100/barrier_algorithms_10_policy=pairwise_scale_over_nlocs.dat};
+  {perfs/barrier_algorithms_10/barrier_algorithms_10_policy=pairwise_unit=ns_scale_over_nlocs.dat};
   \addlegendentry{\tiny{pairwise}}
 \end{axis}
 \end{tikzpicture}
@@ -101,46 +101,15 @@
              legend style={at={(1.02,1)}}]
   \addplot[color=blue]
   plot[smooth,mark=diamond*,mark size=1.5pt] file
-  {perfs/barrier_algorithms_100/barrier_algorithms_100_policy=dissemination_scale_over_nlocs.dat};
+  {perfs/barrier_algorithms_100/barrier_algorithms_100_policy=dissemination_unit=ns_scale_over_nlocs.dat};
   \addlegendentry{\tiny{dissemination}}
   \addplot[color=red]
   plot[smooth,mark=diamond*,mark size=1.5pt] file
-  {perfs/barrier_algorithms_100/barrier_algorithms_100_policy=central_scale_over_nlocs.dat};
+  {perfs/barrier_algorithms_100/barrier_algorithms_100_policy=central_unit=ns_scale_over_nlocs.dat};
   \addlegendentry{\tiny{central}}
   \addplot[color=dkgreen]
   plot[smooth,mark=diamond*,mark size=1.5pt] file
-  {perfs/barrier_algorithms_100/barrier_algorithms_100_policy=pairwise_scale_over_nlocs.dat};
-  \addlegendentry{\tiny{pairwise}}
-\end{axis}
-\end{tikzpicture}
-\end{center}
-\end{frame}
-%=============================================
-\begin{frame}
-\frametitle{Barrier Algorithms - Overhead evaluation in ns - vector size = 1000}
-\begin{center}
-\begin{tikzpicture}[scale = 0.8]
-\pgfplotsset{grid style={thick,dashed,gray}}
-\pgfplotsset{minor grid style={dotted,gray}}
-\begin{axis}[xlabel=\footnotesize Number of localities,
-             ylabel=\footnotesize Overhead in ns,
-             grid=both,
-             minor tick num=1,
-             ymin=0,
-             xmin = 0,
-             legend pos=north west,
-             legend style={at={(1.02,1)}}]
-  \addplot[color=blue]
-  plot[smooth,mark=diamond*,mark size=1.5pt] file
-  {perfs/barrier_algorithms_100/barrier_algorithms_1000_policy=dissemination_scale_over_nlocs.dat};
-  \addlegendentry{\tiny{dissemination}}
-  \addplot[color=red]
-  plot[smooth,mark=diamond*,mark size=1.5pt] file
-  {perfs/barrier_algorithms_100/barrier_algorithms_1000_policy=central_scale_over_nlocs.dat};
-  \addlegendentry{\tiny{central}}
-  \addplot[color=dkgreen]
-  plot[smooth,mark=diamond*,mark size=1.5pt] file
-  {perfs/barrier_algorithms_100/barrier_algorithms_1000_policy=pairwise_scale_over_nlocs.dat};
+  {perfs/barrier_algorithms_100/barrier_algorithms_100_policy=pairwise_unit=ns_scale_over_nlocs.dat};
   \addlegendentry{\tiny{pairwise}}
 \end{axis}
 \end{tikzpicture}
