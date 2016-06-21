@@ -130,23 +130,6 @@ boost::uint64_t spmv_coarray( hpx::parallel::spmd_block & block
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void image_coarray( hpx::parallel::spmd_block block, std::string filename, int test_count, std::size_t grain_factor, int unroll_factor)
-{
-    spmatrix a(filename);
-
-    hpx::coarray<double,1> y( block, "y", {_}, hpx::partition<double>( a.chunksize_ ) );
-    std::vector<double> x(a.n_);
-
-    std::size_t size = 2 * a.nnz_;
-    std::size_t datasize = (a.nnz_ + 2*a.m_)*sizeof(double);
-
-    boost::uint64_t toc = spmv_coarray(block,a,x,y,test_count,grain_factor,unroll_factor);
-    printf("performances : %f GFlops\n", double(size)/toc);
-    printf("performances : %f GBs\n", double(datasize)/toc);
-}
-HPX_DEFINE_PLAIN_ACTION(image_coarray);
-///////////////////////////////////////////////////////////////////////////////
-
 int hpx_main(boost::program_options::variables_map& vm)
 {
     std::string filename = vm["filename"].as<std::string>();
@@ -159,10 +142,24 @@ int hpx_main(boost::program_options::variables_map& vm)
         hpx::cout << "test_count cannot be zero or negative...\n" << hpx::flush;
     }
 
-    image_coarray_action act;
+    auto image_coarray =
+    []( hpx::parallel::spmd_block block, std::string filename, int test_count, std::size_t grain_factor, int unroll_factor)
+    {
+        spmatrix a(filename);
+
+        hpx::coarray<double,1> y( block, "y", {_}, hpx::partition<double>( a.chunksize_ ) );
+        std::vector<double> x(a.n_);
+
+        std::size_t size = 2 * a.nnz_;
+        std::size_t datasize = (a.nnz_ + 2*a.m_)*sizeof(double);
+
+        boost::uint64_t toc = spmv_coarray(block,a,x,y,test_count,grain_factor,unroll_factor);
+        printf("performances : %f GFlops\n", double(size)/toc);
+        printf("performances : %f GBs\n", double(datasize)/toc);
+    };
 
     auto localities = hpx::find_all_localities();
-    hpx::parallel::define_spmd_block( localities, act, filename, test_count, grain_factor, unroll_factor).get();
+    hpx::parallel::define_spmd_block( localities, image_coarray, filename, test_count, grain_factor, unroll_factor).get();
 
     return hpx::finalize();
 }

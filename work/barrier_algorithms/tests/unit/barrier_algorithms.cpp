@@ -13,20 +13,19 @@
 
 int main()
 {
-    constexpr auto a = hpx::make_action(
-    [](hpx::parallel::spmd_block block){
+    auto a =
+    [](hpx::parallel::spmd_block block)
+    {
+        auto localities = block.find_all_localities();
 
-            auto localities = block.find_all_localities();
+        std::cout<<"Hello from locality "<<hpx::get_locality_id()<<std::endl;
 
-            std::cout<<"Hello from locality "<<hpx::get_locality_id()<<std::endl;
+        hpx::custom_barrier_sync(localities, "barrier");
 
-            hpx::custom_barrier_sync(localities, "barrier");
+        std::cout<<"Re-Hello from locality "<<hpx::get_locality_id()<<std::endl;
 
-            std::cout<<"Re-Hello from locality "<<hpx::get_locality_id()<<std::endl;
-
-            hpx::custom_barrier_sync(hpx::detail::pairwise, localities, "bar");
-        }
-    );
+        hpx::custom_barrier_sync(hpx::detail::pairwise, localities, "bar");
+    };
 
     auto localities = hpx::find_all_localities();
     hpx::parallel::define_spmd_block( localities, a ).get();

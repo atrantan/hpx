@@ -105,32 +105,6 @@ boost::uint64_t foreach_coarray(  hpx::parallel::spmd_block & block
 
     return hpx::detail::median(time.begin(),time.end());
 }
-///////////////////////////////////////////////////////////////////////////////
-void image_coarray( hpx::parallel::spmd_block block
-                  , std::size_t vector_size
-                  , int delay_
-                  , int test_count
-                  , boost::uint64_t seq_ref
-                  )
-{
-    using hpx::_;
-    // Constants used by Co-arrays
-    const std::size_t numlocs = block.find_all_localities().size();
-
-    delay = delay_;
-
-    // Initialize Coarray and call foreach
-    {
-        const std::size_t partition_size = vector_size / numlocs;
-
-        hpx::coarray<int,1> v( block, "v", {_}, hpx::partition<int>(partition_size) );
-
-        hpx::cout << "hpx::coarray<int>(par): "
-            << double(seq_ref)/foreach_coarray(block,v,test_count)
-            << "\n";
-    }
-}
-HPX_DEFINE_PLAIN_ACTION(image_coarray);
 
 ///////////////////////////////////////////////////////////////////////////////
 int hpx_main(boost::program_options::variables_map& vm)
@@ -140,7 +114,31 @@ int hpx_main(boost::program_options::variables_map& vm)
     delay = vm["work_delay"].as<int>();
     int test_count = vm["test_count"].as<int>();
 
-    image_coarray_action act;
+    auto image_coarray
+    =   []( hpx::parallel::spmd_block block
+          , std::size_t vector_size
+          , int delay_
+          , int test_count
+          , boost::uint64_t seq_ref
+          )
+        {
+            using hpx::_;
+            // Constants used by Co-arrays
+            const std::size_t numlocs = block.find_all_localities().size();
+
+            delay = delay_;
+
+            // Initialize Coarray and call foreach
+            {
+                const std::size_t partition_size = vector_size / numlocs;
+
+                hpx::coarray<int,1> v( block, "v", {_}, hpx::partition<int>(partition_size) );
+
+                hpx::cout << "hpx::coarray<int>(par): "
+                    << double(seq_ref)/foreach_coarray(block,v,test_count)
+                    << "\n";
+            }
+        };
 
     // verify that input is within domain of program
     if (test_count == 0 || test_count < 0) {
@@ -156,7 +154,7 @@ int hpx_main(boost::program_options::variables_map& vm)
 
         // 2) Coarray and for_each
         auto localities = hpx::find_all_localities();
-        hpx::parallel::define_spmd_block( localities, act
+        hpx::parallel::define_spmd_block( localities, image_coarray
                                         , vector_size, delay, test_count, seq_ref
                                         ).get();
     }
@@ -186,4 +184,3 @@ int main(int argc, char* argv[])
 
     return hpx::init(cmdline, argc, argv);
 }
-

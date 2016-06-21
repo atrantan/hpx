@@ -71,38 +71,6 @@ boost::uint64_t foreach_vector( hpx::parallel::spmd_block & block
     }
     return (hpx::util::high_resolution_clock::now() - start) / test_count;
 }
-///////////////////////////////////////////////////////////////////////////////
-void image( hpx::parallel::spmd_block block
-          , std::size_t vector_size
-          , int delay_
-          , std::string barrier_policy
-          , int test_count
-          )
-{
-    delay = delay_;
-
-    std::vector<int> v(vector_size);
-
-    if(barrier_policy == "central")
-    {
-        hpx::cout << "Time : "
-            << foreach_vector(block, hpx::detail::central, v, test_count)
-            << " ns\n";
-    }
-    else if(barrier_policy == "dissemination")
-    {
-        hpx::cout << "Time : "
-            << foreach_vector(block, hpx::detail::dissemination, v, test_count)
-            << " ns\n";
-    }
-    else
-    {
-        hpx::cout << "Time : "
-            << foreach_vector(block, hpx::detail::pairwise, v, test_count)
-            << " ns\n";
-    }
-}
-HPX_DEFINE_PLAIN_ACTION(image);
 
 ///////////////////////////////////////////////////////////////////////////////
 int hpx_main(boost::program_options::variables_map& vm)
@@ -112,7 +80,38 @@ int hpx_main(boost::program_options::variables_map& vm)
     std::string barrier_policy = vm["barrier_policy"].as<std::string>();
     int test_count = vm["test_count"].as<int>();
 
-    image_action act;
+    auto image =
+    []( hpx::parallel::spmd_block block
+      , std::size_t vector_size
+      , int delay_
+      , std::string barrier_policy
+      , int test_count
+      )
+    {
+        delay = delay_;
+
+        std::vector<int> v(vector_size);
+
+        if(barrier_policy == "central")
+        {
+            hpx::cout << "Time : "
+                << foreach_vector(block, hpx::detail::central, v, test_count)
+                << " ns\n";
+        }
+        else if(barrier_policy == "dissemination")
+        {
+            hpx::cout << "Time : "
+                << foreach_vector(block, hpx::detail::dissemination, v, test_count)
+                << " ns\n";
+        }
+        else
+        {
+            hpx::cout << "Time : "
+                << foreach_vector(block, hpx::detail::pairwise, v, test_count)
+                << " ns\n";
+        }
+    };
+
 
     // verify that input is within domain of program
     if (test_count == 0 || test_count < 0) {
@@ -123,7 +122,7 @@ int hpx_main(boost::program_options::variables_map& vm)
     }
     else {
         auto localities = hpx::find_all_localities();
-        hpx::parallel::define_spmd_block( localities, act
+        hpx::parallel::define_spmd_block( localities, image
                                         , vector_size, delay, barrier_policy, test_count
                                         ).get();
     }
@@ -157,4 +156,3 @@ int main(int argc, char* argv[])
 
     return hpx::init(cmdline, argc, argv);
 }
-

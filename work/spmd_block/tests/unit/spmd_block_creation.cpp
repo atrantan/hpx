@@ -11,46 +11,39 @@
 
 #include <spmd_block/spmd_block.hpp>
 
-void bsp3(hpx::parallel::spmd_block block)
-{
-  std::cout<<"Enter in BSP 3"<<std::endl;
-
-}
-HPX_DEFINE_PLAIN_ACTION(bsp3);
-
-
-void bsp2(hpx::parallel::spmd_block block)
-{
-    std::cout<<"Enter in BSP 2"<<std::endl;
-
-    bsp3_action act3;
-    block.run(act3);             // potential concurrency in queuing
-}
-HPX_DEFINE_PLAIN_ACTION(bsp2);
-
-
-void bsp1(hpx::parallel::spmd_block block)
-{
-    std::cout<<"Enter in BSP 1"<<std::endl;
-
-    bsp2_action act2;
-    block.run(act2);                       // master dispatch actions
-
-    bsp3_action act3;
-    block.run(act3);            // potential concurrency in queuing
-
-    block.wait("").get();
-}
-HPX_DEFINE_PLAIN_ACTION(bsp1);
-
-
 int main()
 {
-    bsp1_action act1;
+
+    auto bsp1 = [](hpx::parallel::spmd_block block)
+                {
+                    auto bsp4 = [](hpx::parallel::spmd_block block)
+                                {
+                                  std::cout<<"Enter in BSP 4"<<std::endl;
+                                };
+
+                    auto bsp2 = [](hpx::parallel::spmd_block block)
+                                {
+                                    auto bsp3 = [](hpx::parallel::spmd_block block)
+                                                {
+                                                  std::cout<<"Enter in BSP 3"<<std::endl;
+                                                };
+
+                                    std::cout<<"Enter in BSP 2"<<std::endl;
+
+                                    block.run(bsp3);             // potential concurrency in queuing
+                                };
+
+                    std::cout<<"Enter in BSP 1"<<std::endl;
+
+                    block.run(bsp2);            // master dispatch actions
+                    block.run(bsp4);            // potential concurrency in queuing
+
+                    block.wait("").get();
+                };
 
     auto localities = hpx::find_all_localities();
 
-    hpx::parallel::define_spmd_block(localities, act1 ).get();
+    hpx::parallel::define_spmd_block(localities, bsp1 ).get();
 
     std::cout<<"all is done"<<std::endl;
 

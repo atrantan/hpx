@@ -11,6 +11,7 @@ include_directories(include)
 set(tests
     pvector_view_transpose
     pvector_view_transpose_with_tasks
+    transpose_smp_block
    )
 
 foreach(test ${tests})
@@ -23,5 +24,5 @@ endforeach()
 set(test intel_openmp_transpose)
 set(sources ${test}.cpp)
 add_executable(${test}_test ${sources})
-set_target_properties(${test}_test PROPERTIES COMPILE_FLAGS -fopenmp)
+set_target_properties(${test}_test PROPERTIES COMPILE_FLAGS "-O3 -DNDEBUG -fopenmp")
 target_link_libraries (${test}_test ${HPX_LIBRARIES} -fopenmp)

@@ -13,12 +13,14 @@
 #include <hpx/include/lcos.hpp>
 #include <hpx/async.hpp>
 #include <hpx/lcos/local/spinlock.hpp>
+#include <hpx/lcos/broadcast.hpp>
 
 #include <hpx/runtime/serialization/serialize.hpp>
 #include <hpx/include/components.hpp>
 
 #include <boost/thread/locks.hpp>
 #include <barrier_algorithms/barrier_algorithms.hpp>
+#include <make_action/make_action.hpp>
 
 
 namespace hpx { namespace server
@@ -59,25 +61,14 @@ namespace hpx { namespace server
         // Action submitted to a spmd_block must have at least one parameter
         // and the first parameter must be a spmd_block
 
-        template <typename Action, typename Client, typename ... Args>
-        void run(Action && a, Client const & client, Args && ... args)
+        template <typename F, typename Client, typename ... Args>
+        void run(F && f, Client const & client, Args && ... args)
         {
-            using localities_type = std::vector< hpx::id_type >;
-            using const_iterator = typename localities_type::const_iterator;
-
-            std::vector< hpx::future<void> > join;
-            const_iterator l_it  = localities_.cbegin() + 1;
-            const_iterator l_end = localities_.cend();
-
-            for( ; l_it != l_end ; l_it++ )
-            {
-                join.push_back( hpx::async( std::forward<Action>(a), *l_it, Client(client), std::forward<Args>(args)... ) );
-            }
-            join.push_back( hpx::async( std::forward<Action>(a), localities_[0], Client(client), std::forward<Args>(args)... ) );
+            constexpr auto a = hpx::make_action(std::move(f));
 
             {
                 boost::lock_guard<mutex_type> l(mtx_);
-                spmd_tasks_.push_back( hpx::when_all( join ).then( []( when_all_result f){ return f.get(); } ) );
+                spmd_tasks_.push_back( hpx::lcos::broadcast<decltype(a)>(localities_, client, std::forward<Args>(args)...) );
             }
         }
 
@@ -154,14 +145,14 @@ namespace hpx { namespace parallel{
             return rank;
         }
 
-        // Action submitted to a spmd_block must have at least one parameter
+        // Lambda submitted to a spmd_block must have at least one parameter
         // and the first parameter must be a spmd_block
-        template <typename Action, typename ... Args>
-        void run(Action && a, Args && ... args)
+        template <typename F, typename ... Args>
+        void run(F && f, Args && ... args)
         {
             if( hpx::find_here() == localities_[0] )
             {
-                get_ptr()->run( std::forward<Action>(a), *this, std::forward<Args>(args)... );
+                get_ptr()->run( std::move(f), *this, std::forward<Args>(args)... );
             }
         }
 
@@ -224,12 +215,12 @@ namespace hpx { namespace parallel{
         }
     };
 
-    template <typename Action, typename ... Args>
-    hpx::future<void> define_spmd_block(std::vector<hpx::id_type> const & localities, Action && a, Args && ... args)
+    template <typename F, typename ... Args>
+    hpx::future<void> define_spmd_block(std::vector<hpx::id_type> const & localities, F && f, Args && ... args)
     {
         spmd_block block(localities);
 
-        block.run( std::forward<Action>(a), std::forward<Args>(args)... );
+        block.run( std::move(f), std::forward<Args>(args)... );
 
         return block.when();
     }

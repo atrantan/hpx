@@ -32,10 +32,10 @@ namespace hpx{
 
         template<typename F, typename ReturnType, typename ... Args>
         struct caller{
-          static inline ReturnType call(Args && ... args)
+          static inline ReturnType call(Args... args)
           {
              int * dummy = nullptr;
-             return reinterpret_cast<const F&>(*dummy)( std::forward<Args>(args)... );
+             return reinterpret_cast<const F&>(*dummy)( args... );
           }
         };
 
@@ -59,7 +59,9 @@ namespace hpx{
         template <typename ClassType, typename ReturnType, typename... Args>
         struct extract_parameters<ReturnType(ClassType::*)(Args...) const>
         {
-            using type = hpx::detail::Sequence<Args...>;
+            template<typename T>
+            using remove_reference_t = typename std::remove_reference<T>::type;
+            using type = hpx::detail::Sequence< remove_reference_t<Args>... >;
         };
 
         template <typename T>
