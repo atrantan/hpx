@@ -21,8 +21,8 @@ foreach(test ${tests})
 endforeach()
 
 
-set(test intel_openmp_transpose)
-set(sources ${test}.cpp)
-add_executable(${test}_test ${sources})
-set_target_properties(${test}_test PROPERTIES COMPILE_FLAGS "-O3 -DNDEBUG -fopenmp")
-target_link_libraries (${test}_test ${HPX_LIBRARIES} -fopenmp)
+# set(test intel_openmp_transpose)
+# set(sources ${test}.cpp)
+# add_executable(${test}_test ${sources})
+# set_target_properties(${test}_test PROPERTIES COMPILE_FLAGS "-O3 -DNDEBUG -fopenmp")
+# target_link_libraries (${test}_test ${HPX_LIBRARIES} -fopenmp)

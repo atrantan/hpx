@@ -21,14 +21,14 @@ set(mkl_seq_lib_name
     dl
    )
 
-set(mkl_threaded_lib_name
-    mkl_intel_lp64
-    mkl_core
-    mkl_gnu_thread
-    pthread
-    m
-    dl
-   )
+# set(mkl_threaded_lib_name
+#     mkl_intel_lp64
+#     mkl_core
+#     mkl_gnu_thread
+#     pthread
+#     m
+#     dl
+#    )
 
 # Create library for Matrix Market utilities
 add_library(mmio SHARED mmio.cpp)
@@ -48,9 +48,9 @@ foreach(test ${tests})
     target_link_libraries (${test}_test  ${mkl_seq_lib_name} ${HPX_LIBRARIES} hpx_partitioned_vector hpx_spmd_block mmio)
 endforeach()
 
-set(test mkl_threaded_spmv)
-link_directories(${mkl_lib_dir})
-set(sources ${test}.cpp)
-add_executable(${test}_test ${sources})
-set_target_properties(${test}_test PROPERTIES COMPILE_FLAGS "-fopenmp -m64")
-target_link_libraries (${test}_test ${HPX_LIBRARIES} ${mkl_threaded_lib_name} -fopenmp  mmio)
+# set(test mkl_threaded_spmv)
+# link_directories(${mkl_lib_dir})
+# set(sources ${test}.cpp)
+# add_executable(${test}_test ${sources})
+# set_target_properties(${test}_test PROPERTIES COMPILE_FLAGS "-fopenmp -m64")
+# target_link_libraries (${test}_test ${HPX_LIBRARIES} ${mkl_threaded_lib_name} -fopenmp  mmio)
