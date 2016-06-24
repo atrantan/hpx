@@ -11,7 +11,8 @@
 #include <utility>
 #include <boost/cstdint.hpp>
 
-#include <hpx/hpx.hpp>
+#include <hpx/runtime/get_locality_id.hpp>
+#include <hpx/runtime/naming/name.hpp>
 #include <hpx/components/containers/partitioned_vector/partitioned_vector_component.hpp>
 
 #include <pvector_view/view_element_boundary.hpp>

@@ -15,7 +15,6 @@
 #include <hpx/components/containers/partitioned_vector/partitioned_vector_segmented_iterator.hpp>
 
 #include <pvector_view/view_element.hpp>
-
 #include <utility/make_index_sequence.hpp>
 
 namespace hpx {

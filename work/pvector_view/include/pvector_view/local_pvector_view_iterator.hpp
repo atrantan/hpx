@@ -8,7 +8,6 @@
 #define LOCAL_PVECTOR_VIEW_ITERATOR_HPP
 
 #include <boost/iterator/iterator_adaptor.hpp>
-
 #include <pvector_view/view_element.hpp>
 
 namespace hpx {

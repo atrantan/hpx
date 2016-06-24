@@ -7,18 +7,18 @@
 #if !defined(SPMD_BLOCK_HPP)
 #define SPMD_BLOCK_HPP
 
-#include <hpx/hpx_fwd.hpp>
+#include <hpx/runtime/get_locality_id.hpp>
+#include <hpx/runtime/naming/name.hpp>
+#include <hpx/runtime/serialization/serialize.hpp>
+#include <hpx/async.hpp>
 #include <hpx/lcos/future.hpp>
 #include <hpx/lcos/when_all.hpp>
-#include <hpx/include/lcos.hpp>
-#include <hpx/async.hpp>
 #include <hpx/lcos/local/spinlock.hpp>
 #include <hpx/lcos/broadcast.hpp>
-
-#include <hpx/runtime/serialization/serialize.hpp>
 #include <hpx/include/components.hpp>
 
 #include <boost/thread/locks.hpp>
+
 #include <barrier_algorithms/barrier_algorithms.hpp>
 #include <make_action/make_action.hpp>
 

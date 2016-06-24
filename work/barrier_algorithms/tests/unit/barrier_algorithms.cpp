@@ -6,10 +6,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_main.hpp>
-#include <make_action/make_action.hpp>
 #include <spmd_block/spmd_block.hpp>
 #include <barrier_algorithms/barrier_algorithms.hpp>
-
 
 int main()
 {

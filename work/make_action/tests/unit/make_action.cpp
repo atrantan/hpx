@@ -8,7 +8,7 @@
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_main.hpp>
 #include <make_action/make_action.hpp>
-#include <hpx/include/lcos.hpp>
+#include <hpx/lcos/barrier.hpp>
 
 #include <type_traits>
 

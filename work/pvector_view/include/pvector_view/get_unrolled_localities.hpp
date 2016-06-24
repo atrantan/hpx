@@ -7,18 +7,19 @@
 #if !defined(GET_UNROLLED_LOCALITIES_HPP)
 #define GET_UNROLLED_LOCALITIES_HPP
 
-#include <hpx/hpx.hpp>
+#include <hpx/runtime/naming/id_type.hpp>
 #include <algorithm>
 
 
 namespace hpx {
 
-    std::vector<hpx::id_type> get_unrolled_localities( std::vector< hpx::id_type > const & in
-                                                     , std::size_t N
-                                                     , std::size_t unroll
-                                                     )
+    std::vector<hpx::naming::id_type>
+    get_unrolled_localities( std::vector< hpx::naming::id_type > const & in
+                           , std::size_t N
+                           , std::size_t unroll
+                           )
     {
-        std::vector<hpx::id_type> out ( N );
+        std::vector<hpx::naming::id_type> out ( N );
 
         auto o_end = out.end();
 

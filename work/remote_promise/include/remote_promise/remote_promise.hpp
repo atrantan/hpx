@@ -7,13 +7,13 @@
 #if !defined(REMOTE_PROMISE_HPP)
 #define REMOTE_PROMISE_HPP
 
-#include <hpx/hpx_fwd.hpp>
+#include <hpx/async.hpp>
+#include <hpx/util/assert.hpp>
 #include <hpx/lcos/future.hpp>
-#include <boost/exception_ptr.hpp>
-
 #include <hpx/runtime/serialization/serialize.hpp>
 #include <hpx/include/components.hpp>
 
+#include <boost/exception_ptr.hpp>
 
 namespace hpx { namespace server
 {

@@ -14,7 +14,6 @@
 
 #include <spmd_block/spmd_block.hpp>
 #include <barrier_algorithms/barrier_algorithms.hpp>
-
 #include <utility/median.hpp>
 
 #include <stdexcept>

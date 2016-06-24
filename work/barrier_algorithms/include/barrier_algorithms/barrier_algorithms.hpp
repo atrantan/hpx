@@ -7,7 +7,7 @@
 #if !defined(BARRIER_ALGORITHMS_HPP)
 #define BARRIER_ALGORITHMS_HPP
 
-#include <hpx/include/lcos.hpp>
+#include <hpx/lcos/barrier.hpp>
 #include <remote_promise/remote_promise.hpp>
 #include <string>
 

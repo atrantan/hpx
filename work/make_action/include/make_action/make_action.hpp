@@ -7,7 +7,6 @@
 #if !defined(MAKE_ACTION_HPP)
 #define MAKE_ACTION_HPP
 
-#include <hpx/hpx.hpp>
 #include <hpx/include/plain_actions.hpp>
 #include <type_traits>
 
