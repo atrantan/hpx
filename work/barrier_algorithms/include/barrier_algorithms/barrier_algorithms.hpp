@@ -39,14 +39,14 @@ namespace hpx{
 
 
         template<typename Policy = detail::central_policy>
-        struct custom_barrier_sync_impl;
+        struct custom_barrier_impl;
 
         template<>
-        struct custom_barrier_sync_impl<detail::central_policy>
+        struct custom_barrier_impl<detail::central_policy>
         {
-           static void call( std::vector<hpx::id_type> const & localities
-                           , std::string && barrier_name
-                           )
+           static hpx::future<void> call( std::vector<hpx::id_type> const & localities
+                                        , std::string && barrier_name
+                                        )
            {
                 std::size_t numlocs = localities.size();
                 hpx::id_type here = hpx::find_here();
@@ -56,23 +56,23 @@ namespace hpx{
                     // create the barrier, register it with AGAS
                     hpx::lcos::barrier b = hpx::new_<hpx::lcos::barrier>(here,numlocs);
                     b.register_as(barrier_name + "_default");
-                    b.wait();
+                    return b.wait_async().then( [b]( hpx::future<void> event ){ event.get(); }  );
                 }
                 else
                 {
                     hpx::lcos::barrier b;
                     b.connect_to(barrier_name + "_default");
-                    b.wait();
+                    return b.wait_async().then( [b]( hpx::future<void> event ){ event.get(); }  );
                 }
             }
         };
 
         template<>
-        struct custom_barrier_sync_impl<detail::dissemination_policy>
+        struct custom_barrier_impl<detail::dissemination_policy>
         {
-           static void call( std::vector<hpx::id_type> const & localities
-                           , std::string && barrier_name
-                           )
+           static hpx::future<void> call( std::vector<hpx::id_type> const & localities
+                                        , std::string && barrier_name
+                                        )
            {
                 const std::size_t numlocs = localities.size();
                 const hpx::id_type here = hpx::find_here();
@@ -80,31 +80,41 @@ namespace hpx{
 
                 const bool is_power_of_two = (!(numlocs & (numlocs - 1)) && numlocs);
 
+                hpx::future<void> f = hpx::make_ready_future();
+
                 for(std::size_t i = 1, s = 0, iend = localities.size(); i<iend; i*=2, s++)
                 {
                     std::size_t dest = is_power_of_two ?  rank ^ i : (rank+i) % iend;
 
-                    // Prepare own flag for external notification
-                    hpx::remote_promise<void> brecv(here);
-                    brecv.register_as( barrier_name + "_" + std::to_string(rank) + "_" + std::to_string(s) );
+                    f = f.then( [barrier_name, here, rank, dest, s]( hpx::future<void> f_ )
+                                {
+                                    f_.get();
 
-                    // Notify the partner
-                    hpx::remote_promise<void> bsend;
-                    bsend.connect_to( barrier_name + "_" + std::to_string(dest) + "_" + std::to_string(s) );
-                    bsend.set_value();
+                                    // Prepare own flag for external notification
+                                    hpx::remote_promise<void> brecv(here);
+                                    brecv.register_as( barrier_name + "_" + std::to_string(rank) + "_" + std::to_string(s) );
 
-                    // Wait for the other partner
-                    brecv.get_future().get();
+                                    // Notify the partner
+                                    hpx::remote_promise<void> bsend;
+                                    bsend.connect_to( barrier_name + "_" + std::to_string(dest) + "_" + std::to_string(s) );
+                                    bsend.set_value();
+
+                                    // Asynchronously wait for the other partner
+                                    return brecv.get_future().then( [brecv]( hpx::future<void> event ){ event.get(); }  );
+                                }
+                        );
                 }
+
+                return f;
            }
         };
 
         template<>
-        struct custom_barrier_sync_impl<detail::pairwise_policy>
+        struct custom_barrier_impl<detail::pairwise_policy>
         {
-           static void call( std::vector<hpx::id_type> const & localities
-                           , std::string && barrier_name
-                           )
+           static hpx::future<void> call( std::vector<hpx::id_type> const & localities
+                                        , std::string && barrier_name
+                                        )
            {
                 const std::size_t numlocs = localities.size();
                 const hpx::id_type here = hpx::find_here();
@@ -127,85 +137,96 @@ namespace hpx{
                     bsend.set_value();
 
                     // Wait for the other partner
-                    brecv.get_future().get();
+                    return brecv.get_future().then( [brecv]( hpx::future<void> event ){ event.get(); } );
                 }
                 else
                 {
                     const bool has_carry_partner = rank < (numlocs - cutoff);
+                    hpx::future<void> f = hpx::make_ready_future();
 
                     if(has_carry_partner)
                     {
                         hpx::remote_promise<void> carry(here);
                         carry.register_as( barrier_name + "_" + std::to_string(rank) + "_prologue" );
-                        carry.get_future().get();
+                        f = carry.get_future().then( [carry]( hpx::future<void> event ){ event.get(); } );
                     }
 
                     for(std::size_t i = 1, s = 0, iend = cutoff; i<iend; i*=2, s++)
                     {
                         std::size_t dest = rank ^ i;
 
-                        // Prepare own flag for external notification
-                        hpx::remote_promise<void> brecv(here);
-                        brecv.register_as( barrier_name + "_" + std::to_string(rank) + "_" + std::to_string(s) );
+                        f = f.then( [barrier_name, here, rank, dest, s]( hpx::future<void> f_ )
+                                    {
+                                        f_.get();
 
-                        // Notify the partner
-                        hpx::remote_promise<void> bsend;
-                        bsend.connect_to( barrier_name + "_" + std::to_string(dest) + "_" + std::to_string(s) );
-                        bsend.set_value();
+                                        // Prepare own flag for external notification
+                                        hpx::remote_promise<void> brecv(here);
+                                        brecv.register_as( barrier_name + "_" + std::to_string(rank) + "_" + std::to_string(s) );
 
-                        // Wait for the other partner
-                        brecv.get_future().get();
+                                        // Notify the partner
+                                        hpx::remote_promise<void> bsend;
+                                        bsend.connect_to( barrier_name + "_" + std::to_string(dest) + "_" + std::to_string(s) );
+                                        bsend.set_value();
+
+                                        // Wait for the other partner
+                                        return brecv.get_future().then( [brecv]( hpx::future<void> event ){ event.get(); } );
+                                    }
+                            );
                     }
 
                     if(has_carry_partner)
                     {
-                        hpx::remote_promise<void> bsend;
-                        bsend.connect_to( barrier_name + "_" + std::to_string(rank+cutoff) + "_epilogue" );
-                        bsend.set_value();
+                        std::size_t dest = rank+cutoff;
+
+                        f = f.then( [barrier_name, dest]( hpx::future<void> f_ )
+                                    {
+                                        f_.get();
+                                        hpx::remote_promise<void> bsend;
+                                        bsend.connect_to( barrier_name + "_" + std::to_string(dest) + "_epilogue" );
+                                        bsend.set_value();
+                                    }
+                            );
                     }
+
+                    return f;
                 }
+
+
            }
         };
     }
 
     template<typename Policy>
-    void custom_barrier_sync( Policy const &
-                            , std::vector<hpx::id_type> const & localities
-                            , std::string && barrier_name
-                            )
-    {
-        detail::custom_barrier_sync_impl<Policy>::call(localities, barrier_name + "_hpx_barrier");
-    }
-
-    void custom_barrier_sync( std::vector<hpx::id_type> const & localities
-                            , std::string && barrier_name
-                            )
-    {
-        detail::custom_barrier_sync_impl<>::call(localities, barrier_name + "_hpx_barrier");
-    }
-
-
-    template<typename Policy>
-    hpx::future<void> custom_barrier( Policy const & p
+    hpx::future<void> custom_barrier( Policy const &
                                     , std::vector<hpx::id_type> const & localities
                                     , std::string && barrier_name
                                     )
     {
-        return hpx::async( detail::custom_barrier_sync_impl<Policy>::call
-                         , localities
-                         , barrier_name + "_hpx_barrier"
-                         );
+        return detail::custom_barrier_impl<Policy>::call(localities, barrier_name + "_hpx_barrier");
     }
 
     hpx::future<void> custom_barrier( std::vector<hpx::id_type> const & localities
                                     , std::string && barrier_name
                                     )
     {
-        using default_policy = detail::central_policy;
-        return hpx::async( detail::custom_barrier_sync_impl<default_policy>::call
-                         , localities
-                         , barrier_name + "_hpx_barrier"
-                         );
+        return detail::custom_barrier_impl<>::call(localities, barrier_name + "_hpx_barrier");
+    }
+
+
+    template<typename Policy>
+    void custom_barrier_sync( Policy const & p
+                            , std::vector<hpx::id_type> const & localities
+                            , std::string && barrier_name
+                            )
+    {
+        custom_barrier(p, localities, barrier_name + "_hpx_barrier").get();
+    }
+
+    void custom_barrier_sync( std::vector<hpx::id_type> const & localities
+                            , std::string && barrier_name
+                            )
+    {
+        custom_barrier(localities, barrier_name + "_hpx_barrier").get();
     }
 }
 

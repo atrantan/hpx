@@ -14,15 +14,21 @@ int main()
     auto a =
     [](hpx::parallel::spmd_block block)
     {
+        std::cout<<"Welcome in locality "<<hpx::get_locality_id()<<std::endl;
+
         auto localities = block.find_all_localities();
 
-        std::cout<<"Hello from locality "<<hpx::get_locality_id()<<std::endl;
-
         hpx::custom_barrier_sync(localities, "barrier");
+        std::cout<<"Default barrier reached by locality "<<hpx::get_locality_id()<<std::endl;
 
-        std::cout<<"Re-Hello from locality "<<hpx::get_locality_id()<<std::endl;
+        hpx::custom_barrier_sync(hpx::detail::central, localities, "central");
+        std::cout<<"Central barrier reached by locality "<<hpx::get_locality_id()<<std::endl;
 
-        hpx::custom_barrier_sync(hpx::detail::pairwise, localities, "bar");
+        hpx::custom_barrier_sync(hpx::detail::dissemination, localities, "dissemination");
+        std::cout<<"Dissemination barrier reached by locality "<<hpx::get_locality_id()<<std::endl;
+
+        hpx::custom_barrier_sync(hpx::detail::pairwise, localities, "pairwise");
+        std::cout<<"Pairwise barrier reached by locality "<<hpx::get_locality_id()<<std::endl;
     };
 
     auto localities = hpx::find_all_localities();
