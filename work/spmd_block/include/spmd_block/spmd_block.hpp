@@ -90,9 +90,21 @@ namespace hpx { namespace parallel{
     {
         constexpr auto a = hpx::make_action(std::move(f));
 
+        std::vector< hpx::future<void> > join;
+
         spmd_block block(localities);
 
-        return hpx::lcos::broadcast<decltype(a)>(localities, block, std::forward<Args>(args)...);
+/*        return hpx::lcos::broadcast<decltype(a)>(localities, block, std::forward<Args>(args)...);*/
+
+        for (auto & l : localities)
+        {
+            if ( l != hpx::find_here() )
+            join.push_back( hpx::async(a, l, block, std::forward<Args>(args)...) );
+        }
+
+        join.push_back( hpx::async( a, hpx::find_here(), block, std::forward<Args>(args)...) );
+
+        return hpx::when_all(join).then( [](auto join_){ join_.get(); } );
     }
 
 
