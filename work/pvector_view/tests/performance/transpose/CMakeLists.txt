@@ -17,7 +17,7 @@ set(tests
 foreach(test ${tests})
     set(sources ${test}.cpp)
     add_executable(${test}_test ${sources})
-    target_link_libraries (${test}_test ${HPX_LIBRARIES} hpx_partitioned_vector hpx_spmd_block)
+    target_link_libraries (${test}_test ${HPX_LIBRARIES} hpx_partitioned_vector hpx_remote_promise)
 endforeach()
 
 

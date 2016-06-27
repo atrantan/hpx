@@ -29,8 +29,9 @@ add_subdirectory(remote_promise)
 add_subdirectory(spmd_block)
 add_subdirectory(pvector_view)
 add_subdirectory(make_action)
-# add_subdirectory(stencil_view)
 add_subdirectory(barrier_algorithms)
+# add_subdirectory(stencil_view)
+
 
 
 add_custom_target(
