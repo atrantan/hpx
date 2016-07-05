@@ -14,14 +14,21 @@
 int main()
 {
 
-    auto bsp = [](hpx::parallel::spmd_block block)
+    auto bsp1 = [](hpx::parallel::spmd_block block)
                 {
-                    std::cout<<"Enter in BSP"<<std::endl;
+                    std::cout<<"Enter in BSP1"<<std::endl;
                 };
 
     auto localities = hpx::find_all_localities();
 
-    hpx::parallel::define_spmd_block(localities, bsp ).get();
+    hpx::parallel::define_spmd_block(localities, bsp1 ).get();
+
+    hpx::parallel::define_spmd_block(   localities
+                                    ,   [](hpx::parallel::spmd_block block)
+                                        {
+                                            std::cout<<"Enter in BSP2"<<std::endl;
+                                        }
+                                    ).get();
 
     std::cout<<"all is done"<<std::endl;
 
