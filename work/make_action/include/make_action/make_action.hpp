@@ -81,6 +81,7 @@ namespace hpx{
           using type = typename make_action_using_sequence<F,return_type,sequence>::type;
         };
 
+
         template<typename F>
         struct action_maker
         {
@@ -89,34 +90,15 @@ namespace hpx{
                 static_assert( !std::is_assignable<F,F>::value && std::is_empty<F>::value
                              ,"Lambda without capture list is required"
                             );
-
                 return typename action_from_lambda<F>::type();
             }
         };
-
-
-        template<typename F, F f>
-        struct action_maker< std::integral_constant<F,f> >
-        {
-            template< typename Dummy>
-            constexpr typename hpx::actions::make_direct_action<F,f>::type operator += (Dummy)
-            {
-                static_assert( !std::is_assignable<F,F>::value && !std::is_empty<F>::value
-                             ,"Function is required"
-                            );
-
-                return typename hpx::actions::make_direct_action<F,f>::type();;
-            }
-        };
-
-
-
     }
 
-  template< typename F>
+  template<typename F>
   constexpr auto make_action(F && f) -> decltype( hpx::detail::action_maker<F>() += true ? nullptr : hpx::detail::addr_add() + f )
   {
-    return hpx::detail::action_maker<F>() += true ? nullptr : hpx::detail::addr_add() + f;
+        return hpx::detail::action_maker<F>() += true ? nullptr : hpx::detail::addr_add() + f;
   }
 
 }

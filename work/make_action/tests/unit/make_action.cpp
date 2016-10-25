@@ -37,13 +37,10 @@ int user_function(int x)
 }
 
 
-auto a_lambda = hpx::make_action([](int x)
+constexpr auto a_lambda = hpx::make_action([](int x)
 {
     return user_function(x);
 });
-
-auto a_function = hpx::make_action( std::integral_constant<int(*)(int),&user_function>() );
-
 
 int main()
 {
@@ -61,22 +58,6 @@ int main()
         }
 
         join.push_back( hpx::async( a_lambda, hpx::find_here(), i++) );
-
-        hpx::wait_all(join);
-    }
-
-    {
-        std::vector< hpx::future<int> > join;
-
-        int i=0;
-
-        for (auto & l : localities)
-        {
-            if ( l != hpx::find_here() )
-            join.push_back( hpx::async(a_function, l, i++) );
-        }
-
-        join.push_back( hpx::async( a_function, hpx::find_here(), i++) );
 
         hpx::wait_all(join);
     }
