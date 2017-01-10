@@ -6,6 +6,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_main.hpp>
+
 #include <spmd_block/spmd_block.hpp>
 #include <barrier_algorithms/barrier_algorithms.hpp>
 
@@ -18,16 +19,16 @@ int main()
 
         auto localities = block.find_all_localities();
 
-        hpx::custom_barrier_sync(localities, "barrier");
+        hpx::custom_barrier(hpx::launch::sync, localities, "barrier");
         std::cout<<"Default barrier reached by locality "<<hpx::get_locality_id()<<std::endl;
 
-        hpx::custom_barrier_sync(hpx::detail::central, localities, "central");
+        hpx::custom_barrier(hpx::launch::sync, hpx::detail::central, localities, "central");
         std::cout<<"Central barrier reached by locality "<<hpx::get_locality_id()<<std::endl;
 
-        hpx::custom_barrier_sync(hpx::detail::dissemination, localities, "dissemination");
+        hpx::custom_barrier(hpx::launch::sync, hpx::detail::dissemination, localities, "dissemination");
         std::cout<<"Dissemination barrier reached by locality "<<hpx::get_locality_id()<<std::endl;
 
-        hpx::custom_barrier_sync(hpx::detail::pairwise, localities, "pairwise");
+        hpx::custom_barrier(hpx::launch::sync, hpx::detail::pairwise, localities, "pairwise");
         std::cout<<"Pairwise barrier reached by locality "<<hpx::get_locality_id()<<std::endl;
     };
 

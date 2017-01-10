@@ -3,8 +3,8 @@
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include <hpx/hpx_init.hpp>
 #include <hpx/hpx.hpp>
+#include <hpx/hpx_init.hpp>
 #include <hpx/util/high_resolution_clock.hpp>
 #include <hpx/include/iostreams.hpp>
 
@@ -66,7 +66,7 @@ boost::uint64_t foreach_vector( hpx::parallel::spmd_block & block
     for (int i = 0; i != test_count; ++i)
     {
         std::for_each( v.begin(), v.end(), wait_op<vector_type>() );
-        block.barrier_sync(p, std::to_string(i));
+        block.barrier(hpx::launch::sync,p, std::to_string(i));
     }
     return (hpx::util::high_resolution_clock::now() - start) / test_count;
 }

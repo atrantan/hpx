@@ -7,15 +7,16 @@
 
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_main.hpp>
-#include <make_action/make_action.hpp>
 #include <hpx/lcos/barrier.hpp>
+
+#include <make_action/make_action.hpp>
 
 #include <type_traits>
 
 int user_function(int x)
 {
     std::size_t here = hpx::get_locality_id();
-    std::size_t numlocs = hpx::get_num_localities_sync();
+    std::size_t numlocs = hpx::get_num_localities(hpx::launch::sync) ;
 
     std::cout <<"Welcome to locality "<< here <<" among "<< numlocs <<" localities"<<std::endl;
 

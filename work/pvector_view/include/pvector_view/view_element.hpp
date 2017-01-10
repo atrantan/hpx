@@ -12,6 +12,7 @@
 #include <boost/cstdint.hpp>
 
 #include <hpx/runtime/get_locality_id.hpp>
+#include <hpx/runtime/launch_policy.hpp>
 #include <hpx/runtime/naming/name.hpp>
 #include <hpx/components/containers/partitioned_vector/partitioned_vector_component.hpp>
 
@@ -62,7 +63,7 @@ namespace hpx { namespace detail {
                 return this->get_ptr()->get_data();
             }
             else
-                return this->get_copied_data_sync();
+                return this->get_copied_data(hpx::launch::sync) ;
         }
 
     // Unsafe reference get operation
@@ -91,7 +92,7 @@ namespace hpx { namespace detail {
             }
             else
             {
-                this->set_data_sync( std::move(other) );
+                this->set_data(hpx::launch::sync, std::move(other) );
             }
         }
 
@@ -111,7 +112,7 @@ namespace hpx { namespace detail {
                 }
 
                 else
-                    this->set_data_sync( other.const_data() );
+                    this->set_data(hpx::launch::sync, other.const_data() );
             }
         }
 
@@ -123,7 +124,7 @@ namespace hpx { namespace detail {
             }
 
             else
-                return this->get_value_sync(i);
+                return this->get_value(hpx::launch::sync,i);
         }
 
     // Stencil interfaces

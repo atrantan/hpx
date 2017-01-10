@@ -8,6 +8,7 @@
 #define BARRIER_ALGORITHMS_HPP
 
 #include <hpx/lcos/barrier.hpp>
+#include <hpx/runtime/launch_policy.hpp>
 #include <remote_promise/remote_promise.hpp>
 #include <string>
 
@@ -214,17 +215,18 @@ namespace hpx{
 
 
     template<typename Policy>
-    void custom_barrier_sync( Policy const & p
-                            , std::vector<hpx::id_type> const & localities
-                            , std::string && barrier_name
-                            )
+    void custom_barrier(hpx::launch::sync_policy const &, Policy const & p
+                      , std::vector<hpx::id_type> const & localities
+                      , std::string && barrier_name
+                       )
     {
         custom_barrier(p, localities, barrier_name + "_hpx_barrier").get();
     }
 
-    void custom_barrier_sync( std::vector<hpx::id_type> const & localities
-                            , std::string && barrier_name
-                            )
+    void custom_barrier(hpx::launch::sync_policy const &
+                      , std::vector<hpx::id_type> const & localities
+                      , std::string && barrier_name
+                       )
     {
         custom_barrier(localities, barrier_name + "_hpx_barrier").get();
     }

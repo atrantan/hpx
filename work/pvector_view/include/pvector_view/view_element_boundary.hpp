@@ -13,6 +13,7 @@
 
 #include <hpx/runtime/get_locality_id.hpp>
 #include <hpx/runtime/naming/name.hpp>
+#include <hpx/runtime/launch_policy.hpp>
 #include <hpx/components/containers/partitioned_vector/partitioned_vector_component.hpp>
 
 #include <stencil_view/stencil_view.hpp>
@@ -91,7 +92,7 @@ namespace hpx { namespace detail {
                         *i_it  = out.raw_pos();
                     }
 
-                    this->set_values_sync(indices,data);
+                    this->set_values(hpx::launch::sync,indices,data);
                 }
             }
         }

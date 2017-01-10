@@ -8,6 +8,7 @@
 #define SPMD_BLOCK_HPP
 
 #include <hpx/runtime/get_locality_id.hpp>
+#include <hpx/runtime/launch_policy.hpp>
 #include <hpx/runtime/naming/name.hpp>
 #include <hpx/runtime/serialization/serialize.hpp>
 #include <hpx/lcos/future.hpp>
@@ -50,9 +51,9 @@ namespace hpx { namespace parallel{
         }
 
         template<typename Policy>
-        void barrier_sync(Policy const & p, std::string && bname ) const
+        void barrier(hpx::launch::sync, Policy const & p, std::string && bname ) const
         {
-            hpx::custom_barrier_sync(p, localities_, std::move(bname) );
+            hpx::custom_barrier(hpx::launch::sync, p, localities_, std::move(bname) );
         }
 
         template<typename Policy>
@@ -62,9 +63,9 @@ namespace hpx { namespace parallel{
         }
 
 
-        void barrier_sync( std::string && bname ) const
+        void barrier(hpx::launch::sync, std::string && bname ) const
         {
-            hpx::custom_barrier_sync( localities_, std::move(bname) );
+            hpx::custom_barrier(hpx::launch::sync, localities_, std::move(bname) );
         }
 
         hpx::future<void> barrier( std::string && bname ) const

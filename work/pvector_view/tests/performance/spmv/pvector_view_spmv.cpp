@@ -107,7 +107,7 @@ boost::uint64_t spmv_coarray( hpx::parallel::spmd_block & block
 
         if( !( (iter + 1) % unroll_factor) )
         {
-            block.barrier_sync("spmv" + iter);
+            block.barrier(hpx::launch::sync, "spmv" + iter);
         }
     }
     return ( hpx::util::high_resolution_clock::now() - start ) / test_count;

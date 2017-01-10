@@ -98,7 +98,7 @@ boost::uint64_t foreach_coarray(  hpx::parallel::spmd_block & block
         {
             auto const & vlocal = v.data(_);
             std::for_each( vlocal.begin(), vlocal.end(), wait_op<Coarray>() );
-            block.barrier_sync( std::to_string(i) );
+            block.barrier(hpx::launch::sync, std::to_string(i) );
         }
         time.push_back( hpx::util::high_resolution_clock::now() - start );
     }

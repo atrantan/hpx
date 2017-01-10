@@ -41,7 +41,7 @@ int main()
             idx++;
         }
 
-        block.barrier_sync("");
+        block.barrier(hpx::launch::sync, "");
 
         if(block.this_image() == 0)
         {

@@ -13,6 +13,7 @@
 #include <hpx/components/containers/partitioned_vector/partitioned_vector.hpp>
 #include <hpx/components/containers/partitioned_vector/partitioned_vector_segmented_iterator.hpp>
 #include <hpx/components/containers/container_distribution_policy.hpp>
+#include <hpx/runtime/launch_policy.hpp>
 #include <hpx/runtime/serialization/serialize.hpp>
 
 #include <pvector_view/get_unrolled_localities.hpp>
@@ -360,10 +361,10 @@ namespace hpx {
                                            , hpx::get_unrolled_localities(localities,size,n)
                                            )
                     );
-                vector_.register_as_sync(name + "_hpx_coarray");
+                vector_.register_as(hpx::launch::sync, name + "_hpx_coarray");
             }
             else
-                vector_.connect_to_sync(name + "_hpx_coarray");
+                vector_.connect_to(hpx::launch::sync, name + "_hpx_coarray");
 
             if( ! stencil.has_sizes() )
                 stencil = hpx::stencil_view<T,N>( make_default_sizes(init_value.size(), indices()) );
