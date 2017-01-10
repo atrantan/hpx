@@ -9,7 +9,10 @@
 
 #include <hpx/lcos/barrier.hpp>
 #include <hpx/runtime/launch_policy.hpp>
+
 #include <remote_promise/remote_promise.hpp>
+
+#include <memory>
 #include <string>
 
 namespace hpx{
@@ -49,22 +52,14 @@ namespace hpx{
                                         , std::string && barrier_name
                                         )
            {
-                std::size_t numlocs = localities.size();
-                hpx::id_type here = hpx::find_here();
+                using barrier_type = hpx::lcos::barrier;
 
-                if( here == localities[0] )
-                {
-                    // create the barrier, register it with AGAS
-                    hpx::lcos::barrier b = hpx::new_<hpx::lcos::barrier>(here,numlocs);
-                    b.register_as(barrier_name + "_default");
-                    return b.wait_async().then( [b]( hpx::future<void> event ){ event.get(); }  );
-                }
-                else
-                {
-                    hpx::lcos::barrier b;
-                    b.connect_to(barrier_name + "_default");
-                    return b.wait_async().then( [b]( hpx::future<void> event ){ event.get(); }  );
-                }
+                std::size_t numlocs = localities.size();
+                std::size_t root    = hpx::naming::find_locality_id_from_id(localities[0]);
+
+                // create the barrier, register it with AGAS
+                std::shared_ptr<barrier_type> b = std::make_shared<barrier_type>(barrier_name + "_default", numlocs, root);
+                return b->wait().then( [b]( hpx::future<void> event ){ event.get(); }  );
             }
         };
 
