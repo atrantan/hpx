@@ -12,12 +12,12 @@
 
 namespace hpx {
 
-// A pvector_view is a view of a partitioned_vector.
+// A local_pvector_view is a view of a pvector_view.
     template<typename T, std::size_t N, typename Data, typename Derived = void>
-    struct local_pvector_view : public hpx::partitioned_vector<T,N,Data,Derived>
+    struct local_pvector_view : public hpx::pvector_view<T,N,Data,Derived>
     {
     private:
-        using base_type = hpx::partitioned_vector<T,N,Data,Derived>;
+        using base_type = hpx::pvector_view<T,N,Data,Derived>;
         using base_iterator = typename base_type::iterator;
 
     public:
@@ -47,9 +47,9 @@ namespace hpx {
     };
 
     template<typename T, std::size_t N, typename Data, typename Derived>
-    local_hpx::partitioned_vector<T,N,Data,Derived> local_view( hpx::partitioned_vector<T,N,Data,Derived> const & base )
+    local_pvector_view<T,N,Data,Derived> local_view( hpx::pvector_view<T,N,Data,Derived> const & base )
     {
-        return local_hpx::partitioned_vector<T,N,Data,Derived>( base );
+        return local_pvector_view<T,N,Data,Derived>( base );
     }
 }
 

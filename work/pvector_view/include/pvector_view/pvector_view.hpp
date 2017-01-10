@@ -29,9 +29,6 @@
 
 namespace hpx {
 
-    template<typename T>
-    using partition = Data;
-
     namespace detail{
 
         struct auto_subscript {
@@ -294,11 +291,11 @@ namespace hpx {
 // Struct defining a coarray.
 // A coarray is a pvector_view tied to a partitioned_vector.
     template <typename T, std::size_t N = 1, typename Data = std::vector<T>>
-    struct coarray : public hpx::pvector_view< T,N,coarray<T,N,Data>>
+    struct coarray : public hpx::pvector_view<T,N,Data>
     {
     private:
         using list_type = std::initializer_list<std::size_t>;
-        using base_type = hpx::hpx::partitioned_vector<T,N,Data,coarray>;
+        using base_type = hpx::pvector_view<T,N,Data>;
         using pvector_iterator = hpx::vector_iterator<T,Data>;
         using traits = typename hpx::traits::segmented_iterator_traits<pvector_iterator>;
         using stencil_type = hpx::stencil_view<T,N,Data>;
@@ -326,7 +323,7 @@ namespace hpx {
         coarray( hpx::parallel::spmd_block & block
                , std::string name
                , list_type && codimensions
-               , hpx::partition<T> && init_value
+               , Data && init_value
                , hpx::stencil_view<T,N,Data> && stencil = {}
                )
         : vector_()
@@ -384,7 +381,7 @@ namespace hpx {
 
     // Coarray view
     template<typename T, std::size_t N, typename Data>
-    using coarray_view = hpx::partitioned_vector<T,N,Data>;
+    using coarray_view = hpx::pvector_view<T,N,Data>;
 }
 
 #endif

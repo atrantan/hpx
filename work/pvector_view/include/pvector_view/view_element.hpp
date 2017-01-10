@@ -23,13 +23,13 @@ namespace hpx { namespace detail {
 // Struct defining the view of pvector_view element.
     template<typename T, typename Data, typename Stencil>
     struct view_element
-    : public hpx::vector_iterator<T,Data>
+    : public hpx::partitioned_vector_partition<T,Data>
     {
         using segment_iterator = typename hpx::vector_iterator<T,Data>::segment_iterator;
 
     public:
         explicit view_element(segment_iterator it, Stencil const & stencil)
-        : hpx::vector_iterator<T,Data>( it->get_id() )
+        : hpx::partitioned_vector_partition<T,Data>( it->get_id() )
         , is_data_here_( hpx::get_locality_id() == hpx::naming::get_locality_id_from_id(it->get_id()) )
         , it_(it)
         , stencil_(stencil)
