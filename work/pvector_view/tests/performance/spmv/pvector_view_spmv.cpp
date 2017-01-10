@@ -1,4 +1,5 @@
 #include <hpx/hpx.hpp>
+#include <hpx/hpx_init.hpp>
 #include <hpx/util/high_resolution_clock.hpp>
 #include <hpx/include/iostreams.hpp>
 
