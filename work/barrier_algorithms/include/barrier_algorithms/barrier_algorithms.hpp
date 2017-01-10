@@ -55,11 +55,11 @@ namespace hpx{
                 using barrier_type = hpx::lcos::barrier;
 
                 std::size_t numlocs = localities.size();
-                std::size_t root    = hpx::naming::find_locality_id_from_id(localities[0]);
+                std::size_t root    = hpx::naming::get_locality_id_from_id(localities[0]);
 
                 // create the barrier, register it with AGAS
                 std::shared_ptr<barrier_type> b = std::make_shared<barrier_type>(barrier_name + "_default", numlocs, root);
-                return b->wait().then( [b]( hpx::future<void> event ){ event.get(); }  );
+                return b->wait(hpx::launch::async).then( [b]( hpx::future<void> event ){ event.get(); }  );
             }
         };
 

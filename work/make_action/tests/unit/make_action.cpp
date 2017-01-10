@@ -22,7 +22,7 @@ int user_function(int x)
 
     // create the barrier, register it with AGAS
     hpx::lcos::barrier b("barrier_name",numlocs);
-    b.wait(hpx::launch::sync);
+    b.wait();
 
     return x + 1;
 }
