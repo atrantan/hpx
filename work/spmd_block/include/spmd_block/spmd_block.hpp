@@ -51,7 +51,7 @@ namespace hpx { namespace parallel{
         }
 
         template<typename Policy>
-        void barrier(hpx::launch::sync, Policy const & p, std::string && bname ) const
+        void barrier(hpx::launch::sync_policy const &, Policy const & p, std::string && bname ) const
         {
             hpx::custom_barrier(hpx::launch::sync, p, localities_, std::move(bname) );
         }
@@ -63,7 +63,7 @@ namespace hpx { namespace parallel{
         }
 
 
-        void barrier(hpx::launch::sync, std::string && bname ) const
+        void barrier(hpx::launch::sync_policy const &, std::string && bname ) const
         {
             hpx::custom_barrier(hpx::launch::sync, localities_, std::move(bname) );
         }
