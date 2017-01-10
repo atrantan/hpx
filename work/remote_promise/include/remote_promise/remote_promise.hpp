@@ -15,6 +15,8 @@
 
 #include <boost/exception_ptr.hpp>
 
+#include <memory>
+
 namespace hpx { namespace server
 {
     template <typename T>
@@ -140,12 +142,16 @@ namespace hpx { namespace detail{
     public:
         remote_promise(){}
 
-        remote_promise( hpx::id_type const & where )
+        explicit remote_promise( hpx::id_type const & where )
         : base_type( hpx::new_<server_type>(where) )
         {}
 
+        explicit remote_promise( hpx::future< hpx::id_type > && fwhere )
+        : base_type( hpx::new_<server_type>(fwhere.get()) )
+        {}
+
         // Return the pinned pointer to the underlying component
-        boost::shared_ptr< server::remote_promise<T> > get_ptr() const
+        std::shared_ptr< server::remote_promise<T> > get_ptr() const
         {
             error_code ec(lightweight);
             return hpx::get_ptr< server::remote_promise<T> >( this->get_id() ).get(ec);
@@ -164,13 +170,13 @@ namespace hpx {
         explicit remote_promise()
         : is_promise_here_( false )
         {
-            ptr_ = boost::make_shared<client_type>();
+            ptr_ = std::make_shared<client_type>();
         }
 
         explicit remote_promise(hpx::id_type const & where )
         : is_promise_here_( hpx::find_here() == where )
         {
-            ptr_ = boost::make_shared<client_type>(where);
+            ptr_ = std::make_shared<client_type>(where);
         }
 
         hpx::future<T> get_future()
@@ -225,7 +231,7 @@ namespace hpx {
 
     private:
         bool is_promise_here_;
-        boost::shared_ptr< hpx::detail::remote_promise<T> > ptr_;
+        std::shared_ptr< hpx::detail::remote_promise<T> > ptr_;
     };
 
     template<>
@@ -237,13 +243,13 @@ namespace hpx {
         explicit remote_promise()
         : is_promise_here_( false )
         {
-            ptr_ = boost::make_shared<client_type>();
+            ptr_ = std::make_shared<client_type>();
         }
 
         explicit remote_promise(hpx::id_type const & where )
         : is_promise_here_( hpx::find_here() == where )
         {
-            ptr_ = boost::make_shared<client_type>(where);
+            ptr_ = std::make_shared<client_type>(where);
         }
 
         hpx::future<void> get_future()
@@ -298,7 +304,7 @@ namespace hpx {
 
     private:
         bool is_promise_here_;
-        boost::shared_ptr< hpx::detail::remote_promise<void> > ptr_;
+        std::shared_ptr< hpx::detail::remote_promise<void> > ptr_;
     };
 }
 
