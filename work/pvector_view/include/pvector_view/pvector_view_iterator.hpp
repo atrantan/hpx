@@ -19,17 +19,17 @@
 
 namespace hpx {
 
-    template<typename T, std::size_t N, typename Stencil>
+    template<typename T, std::size_t N, typename Data, typename Stencil>
     class pvector_view_iterator
     : public boost::iterator_facade
-    < pvector_view_iterator<T,N,Stencil>      // CRTP, just use the pvector_view_iterator name
-    , hpx::detail::view_element<T,Stencil>
+    < pvector_view_iterator<T,N,Data,Stencil>      // CRTP, just use the pvector_view_iterator name
+    , hpx::detail::view_element<T,Data,Stencil>
     , std::random_access_iterator_tag // type of traversal allowed
-    , hpx::detail::view_element<T,Stencil>   // Replace reference return by a view_element return
+    , hpx::detail::view_element<T,Data,Stencil>   // Replace reference return by a view_element return
     >
     {
     private:
-        using pvector_iterator = hpx::vector_iterator<T>;
+        using pvector_iterator = hpx::vector_iterator<T,Data>;
         using segment_iterator = typename pvector_iterator::segment_iterator;
         using indices = typename hpx::detail::make_index_sequence<N>::type;
 
@@ -55,7 +55,7 @@ namespace hpx {
     }
 
     public:
-        using element_type = hpx::detail::view_element<T,Stencil>;
+        using element_type = hpx::detail::view_element<T,Data,Stencil>;
 
         explicit pvector_view_iterator(
               segment_iterator const & begin
@@ -98,7 +98,7 @@ namespace hpx {
     // Will not return a datatype but a view_element type
         element_type dereference() const
         {
-            return hpx::detail::view_element<T,Stencil>( t_, stencil_ );
+            return hpx::detail::view_element<T,Data,Stencil>( t_, stencil_ );
         }
 
         std::ptrdiff_t distance_to(pvector_view_iterator const& other) const

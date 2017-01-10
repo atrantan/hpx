@@ -24,13 +24,13 @@ namespace hpx {
 // Struct defining a view_as_stencil.
 
 // A view_as_stencil is a view of a vector.
-    template<typename T, std::size_t N>
+    template<typename T, std::size_t N, typename Data>
     struct stencil_boundary
     {
         using value_type = T;
 
     private:
-        using vector_iterator = typename std::vector<T>::iterator;
+        using data_iterator = typename Data::iterator;
         using list_type = std::initializer_list<std::size_t>;
 
     private:
@@ -56,13 +56,13 @@ namespace hpx {
         }
 
     public:
-        using iterator = typename hpx::stencil_boundary_iterator<value_type,N>;
+        using iterator = typename hpx::stencil_boundary_iterator<value_type,N,Data>;
 
         explicit stencil_boundary()
         : begin_(nullptr)
         {}
 
-        explicit stencil_boundary(  vector_iterator && begin
+        explicit stencil_boundary(  data_iterator && begin
                                   , std::array<std::size_t,N> const & sw_sizes
                                   , std::array<std::size_t,N> const & hw_sizes
                                   )
@@ -79,14 +79,14 @@ namespace hpx {
     // Iterator interfaces
         iterator begin()
         {
-            return iterator( vector_iterator(begin_)
+            return iterator( data_iterator(begin_)
                            , sw_basis_,hw_basis_
                            , 0);
         }
 
         iterator end()
         {
-            return iterator( vector_iterator(begin_)
+            return iterator( data_iterator(begin_)
                            , sw_basis_, hw_basis_
                            , sw_basis_.back()
                            );
@@ -94,7 +94,7 @@ namespace hpx {
 
         private:
             std::array< std::size_t, N+1 > sw_basis_, hw_basis_;
-            vector_iterator begin_;
+            data_iterator begin_;
     };
 
 // Struct defining a stencil_view.
@@ -103,7 +103,7 @@ namespace hpx {
     struct stencil_view
     {
     private:
-        using vector_iterator = typename std::vector<T>::iterator;
+        using data_iterator = typename Data::iterator;
         using list_type = std::initializer_list<std::size_t>;
 
     public:
@@ -146,7 +146,7 @@ namespace hpx {
         }
 
         template <typename ...I>
-        boundary_type get_boundary(vector_iterator begin, vector_iterator end, I ... i) const
+        boundary_type get_boundary(data_iterator begin, data_iterator end, I ... i) const
         {
             HPX_ASSERT_MSG( has_sizes(), "**Stencil error** : Cannot retrieve any boundary from stencil defined without sizes" );
 

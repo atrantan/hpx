@@ -21,12 +21,11 @@
 namespace hpx { namespace detail {
 
 // Struct defining the view of pvector_view element boundary.
-    template<typename T, typename Stencil>
+    template<typename T, typename Data, typename Stencil>
     struct view_element_boundary
-    : public hpx::partitioned_vector_partition<T>
+    : public hpx::vector_iterator<T,Data>
     {
-        using data_type = typename hpx::server::partitioned_vector<T>::data_type;
-        using segment_iterator = typename hpx::vector_iterator<T>::segment_iterator;
+        using segment_iterator = typename hpx::vector_iterator<T,Data>::segment_iterator;
         using boundary_type = typename Stencil::boundary_type;
 
     public:
@@ -35,10 +34,10 @@ namespace hpx { namespace detail {
                                         , Stencil const & stencil
                                         , I ... i
                                         )
-        : hpx::partitioned_vector_partition<T>( it->get_id() )
+        : hpx::vector_iterator<T,Data>( it->get_id() )
         , is_data_here_( hpx::get_locality_id() == hpx::naming::get_locality_id_from_id(it->get_id()) )
         {
-           std::vector<T> dummy_vector( stencil.get_minimum_vector_size() );     // To avoid assertion failure
+           Data dummy_vector( stencil.get_minimum_vector_size() );     // To avoid assertion failure
 
            auto begin = is_data_here_ ? this->get_ptr()->get_data().begin() : dummy_vector.begin();
            auto end   = is_data_here_ ? this->get_ptr()->get_data().end()   : dummy_vector.end();
@@ -80,7 +79,7 @@ namespace hpx { namespace detail {
                 {
                     std::size_t size = std::distance(in,end);
 
-                    std::vector<T> data( size );
+                    Data data( size );
                     std::vector<std::size_t> indices( size );
 
                     auto d_it  = data.begin();

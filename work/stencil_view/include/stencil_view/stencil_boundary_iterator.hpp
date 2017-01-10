@@ -15,16 +15,16 @@
 
 namespace hpx {
 
-    template<typename T, std::size_t N>
+    template<typename T, std::size_t N, typename Data>
     class stencil_boundary_iterator
     : public boost::iterator_facade
-    < stencil_boundary_iterator<T,N>      // CRTP, just use the stencil_boundary_iterator name
+    < stencil_boundary_iterator<T,N,Data>      // CRTP, just use the stencil_boundary_iterator name
     , T
     , std::random_access_iterator_tag      // type of traversal allowed
     >
     {
     private:
-        using vector_iterator = typename std::vector<T>::iterator;
+        using data_iterator = typename Data::iterator;
         using indices = typename hpx::detail::make_index_sequence<N>::type;
 
     template<std::size_t... I>
@@ -50,7 +50,7 @@ namespace hpx {
 
     public:
         explicit stencil_boundary_iterator(
-              vector_iterator && begin
+              data_iterator && begin
             , std::array<std::size_t, N+1> const & sw_basis
             , std::array<std::size_t, N+1> const & hw_basis
             , std::size_t count
@@ -100,7 +100,7 @@ namespace hpx {
             return other.count_ - count_;
         }
 
-        vector_iterator t_, begin_;
+        data_iterator t_, begin_;
         std::size_t count_;
         std::array< std::size_t, N+1 > const & sw_basis_;
         std::array< std::size_t, N+1 > const & hw_basis_;
@@ -108,20 +108,20 @@ namespace hpx {
 
     //Specialization for 2D stencils
 
-    template<typename T>
-    class stencil_boundary_iterator<T,2>
+    template<typename T, typename Data>
+    class stencil_boundary_iterator<T,2,Data>
     : public boost::iterator_facade
-    < stencil_boundary_iterator<T,2>      // CRTP, just use the stencil_boundary_iterator name
+    < stencil_boundary_iterator<T,2,Data>      // CRTP, just use the stencil_boundary_iterator name
     , T
     , std::random_access_iterator_tag      // type of traversal allowed
     >
     {
     private:
-        using vector_iterator = typename std::vector<T>::iterator;
+        using data_iterator = typename Data::iterator;
 
     public:
         explicit stencil_boundary_iterator(
-              vector_iterator && begin
+              data_iterator && begin
             , std::array<std::size_t, 3> const & sw_basis
             , std::array<std::size_t, 3> const & hw_basis
             , std::size_t count
@@ -170,7 +170,7 @@ namespace hpx {
         }
 
         std::size_t incx_;
-        vector_iterator t_, begin_;
+        data_iterator t_, begin_;
 
     };
 

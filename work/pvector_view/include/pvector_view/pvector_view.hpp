@@ -30,7 +30,7 @@
 namespace hpx {
 
     template<typename T>
-    using partition = std::vector<T>;
+    using partition = Data;
 
     namespace detail{
 
@@ -63,18 +63,18 @@ namespace hpx {
 // Struct defining a pvector_view.
 
 // A pvector_view is a view of a partitioned_vector.
-    template<typename T, std::size_t N, typename Derived = void>
+    template<typename T, std::size_t N, typename Data, typename Derived = void>
     struct pvector_view
     {
         using value_type = T;
 
     private:
-        using pvector_iterator = hpx::vector_iterator<T>;
+        using pvector_iterator = hpx::vector_iterator<T,Data>;
         using segment_iterator = typename pvector_iterator::segment_iterator;
         using segment_type = typename segment_iterator::value_type;
         using traits = typename hpx::traits::segmented_iterator_traits<pvector_iterator>;
         using list_type = std::initializer_list<std::size_t>;
-        using stencil_type = hpx::stencil_view<T,N>;
+        using stencil_type = hpx::stencil_view<T,N,Data>;
 
         template<std::size_t... I>
         void fill_basis( list_type const & sizes
@@ -100,7 +100,7 @@ namespace hpx {
 
     public:
         using iterator
-        = typename hpx::pvector_view_iterator<value_type,N,stencil_type>;
+        = typename hpx::pvector_view_iterator<value_type,N,Data,stencil_type>;
 
         explicit pvector_view( segment_iterator && v_begin)
         : begin_(v_begin)
@@ -201,7 +201,7 @@ namespace hpx {
     public:
     // Array interfaces
         template<typename... I>
-        std::vector<T> & data(I... index)
+        Data & data(I... index)
         {
             using last_element = typename hpx::detail::last_element< I... >::type;
             using condition = typename std::is_same<last_element,detail::auto_subscript>;
@@ -213,11 +213,11 @@ namespace hpx {
             );
 
             std::size_t offset = offset_solver(index... );
-            return hpx::detail::view_element<T,stencil_type>(begin_ + offset, stencil_).data();
+            return hpx::detail::view_element<T,Data,stencil_type>(begin_ + offset, stencil_).data();
         }
 
         template<typename... I>
-        std::vector<T> const & data(I... index) const
+        Data const & data(I... index) const
         {
             using last_element = typename hpx::detail::last_element< I... >::type;
             using condition = typename std::is_same<last_element,detail::auto_subscript>;
@@ -229,12 +229,12 @@ namespace hpx {
             );
 
             std::size_t offset = offset_solver(index... );
-            return hpx::detail::view_element<T,stencil_type>(begin_ + offset, stencil_).data();
+            return hpx::detail::view_element<T,Data,stencil_type>(begin_ + offset, stencil_).data();
         }
 
     // explicit get operation
         template<typename... I>
-        std::vector<T> get(I... index) const
+        Data get(I... index) const
         {
             using last_element = typename hpx::detail::last_element< I... >::type;
             using condition = typename std::is_same<last_element,detail::auto_subscript>;
@@ -242,7 +242,7 @@ namespace hpx {
             static_assert(!condition::value,"**CoArray Error** : 'hpx::_' cannot be used for get operation from subscript");
 
             std::size_t offset = offset_solver(index... );
-            return hpx::detail::view_element<T,stencil_type>(begin_ + offset, stencil_).const_data();
+            return hpx::detail::view_element<T,Data,stencil_type>(begin_ + offset, stencil_).const_data();
         }
 
 
@@ -251,7 +251,7 @@ namespace hpx {
     //                         ex2: this->operator()(1,2,3) = this->operator()(3,4,5);
     //                         )
         template<typename... I>
-        hpx::detail::view_element<T,stencil_type> operator()(I... index) const
+        hpx::detail::view_element<T,Data,stencil_type> operator()(I... index) const
         {
             using last_element = typename hpx::detail::last_element< I... >::type;
             using condition = typename std::is_same<last_element,detail::auto_subscript>;
@@ -259,7 +259,7 @@ namespace hpx {
             static_assert(!condition::value,"**CoArray Error** : 'hpx::_' cannot be used in proxy operation from subscript");
 
             std::size_t offset = offset_solver( index... );
-            return hpx::detail::view_element<T,stencil_type>(begin_ + offset, stencil_);
+            return hpx::detail::view_element<T,Data,stencil_type>(begin_ + offset, stencil_);
         }
 
     // Iterator interfaces
@@ -293,15 +293,15 @@ namespace hpx {
 
 // Struct defining a coarray.
 // A coarray is a pvector_view tied to a partitioned_vector.
-    template <typename T, std::size_t N = 1>
-    struct coarray : public hpx::pvector_view< T,N,coarray<T,N>>
+    template <typename T, std::size_t N = 1, typename Data = std::vector<T>>
+    struct coarray : public hpx::pvector_view< T,N,coarray<T,N,Data>>
     {
     private:
         using list_type = std::initializer_list<std::size_t>;
-        using base_type = hpx::pvector_view<T,N,coarray>;
-        using pvector_iterator = hpx::vector_iterator<T>;
+        using base_type = hpx::hpx::partitioned_vector<T,N,Data,coarray>;
+        using pvector_iterator = hpx::vector_iterator<T,Data>;
         using traits = typename hpx::traits::segmented_iterator_traits<pvector_iterator>;
-        using stencil_type = hpx::stencil_view<T,N>;
+        using stencil_type = hpx::stencil_view<T,N,Data>;
         using indices = typename hpx::detail::make_index_sequence<N>::type;
 
     private:
@@ -327,7 +327,7 @@ namespace hpx {
                , std::string name
                , list_type && codimensions
                , hpx::partition<T> && init_value
-               , hpx::stencil_view<T,N> && stencil = {}
+               , hpx::stencil_view<T,N,Data> && stencil = {}
                )
         : vector_()
         , base_type( traits::segment(vector_.begin()) )
@@ -355,7 +355,7 @@ namespace hpx {
 
                 std::vector< hpx::id_type > localities = block.find_all_localities();
 
-                vector_ = hpx::partitioned_vector<T>( elt_size*size
+                vector_ = hpx::partitioned_vector<T,Data>( elt_size*size
                     , size ? init_value[0] : T(0)
                     , hpx::container_layout( size
                                            , hpx::get_unrolled_localities(localities,size,n)
@@ -367,7 +367,7 @@ namespace hpx {
                 vector_.connect_to(hpx::launch::sync, name + "_hpx_coarray");
 
             if( ! stencil.has_sizes() )
-                stencil = hpx::stencil_view<T,N>( make_default_sizes(init_value.size(), indices()) );
+                stencil = hpx::stencil_view<T,N,Data>( make_default_sizes(init_value.size(), indices()) );
 
             view = base_type( block
                             , vector_.begin()
@@ -379,12 +379,12 @@ namespace hpx {
         }
 
     private:
-        hpx::partitioned_vector<T> vector_;
+        hpx::partitioned_vector<T,Data> vector_;
     };
 
     // Coarray view
-    template<typename T, std::size_t N>
-    using coarray_view = pvector_view<T,N>;
+    template<typename T, std::size_t N, typename Data>
+    using coarray_view = hpx::partitioned_vector<T,N,Data>;
 }
 
 #endif

@@ -21,21 +21,19 @@
 namespace hpx { namespace detail {
 
 // Struct defining the view of pvector_view element.
-    template<typename T, typename Stencil>
+    template<typename T, typename Data, typename Stencil>
     struct view_element
-    : public hpx::partitioned_vector_partition<T>
+    : public hpx::vector_iterator<T,Data>
     {
-        using segment_iterator = typename hpx::vector_iterator<T>::segment_iterator;
+        using segment_iterator = typename hpx::vector_iterator<T,Data>::segment_iterator;
 
     public:
         explicit view_element(segment_iterator it, Stencil const & stencil)
-        : hpx::partitioned_vector_partition<T>( it->get_id() )
+        : hpx::vector_iterator<T,Data>( it->get_id() )
         , is_data_here_( hpx::get_locality_id() == hpx::naming::get_locality_id_from_id(it->get_id()) )
         , it_(it)
         , stencil_(stencil)
         {}
-
-        using data_type = typename hpx::server::partitioned_vector<T>::data_type;
 
         view_element(view_element const &) = default;
 
@@ -56,7 +54,7 @@ namespace hpx { namespace detail {
             return is_data_here_;
         }
 
-        data_type const_data() const
+        Data const_data() const
         {
             if ( is_data_here() )
             {
@@ -68,23 +66,23 @@ namespace hpx { namespace detail {
 
     // Unsafe reference get operation
     // Warning : be careful in making this operation be called after checking with is_data_here()
-        data_type & data()
+        Data & data()
         {
             return this->get_ptr()->get_data();
         }
 
-        data_type const & data() const
+        Data const & data() const
         {
             return this->get_ptr()->get_data();
         }
 
     // Unsafe assignment (Put operation)
     // Warning : be careful in making this operation be invoked by only one locality at a time
-        void operator=(data_type && other)
+        void operator=(Data && other)
         {
             if ( is_data_here() )
             {
-                data_type & ref = data();
+                Data & ref = data();
                 HPX_ASSERT_MSG( ref.size() == other.size()
                 , "**CoArray Error** : Try to assign a vector with invalid size to an existing co-indexed element"
                 );
@@ -98,13 +96,13 @@ namespace hpx { namespace detail {
 
     // Safe assignment (Put operation)
         template<typename RightStencil>
-        void operator=(view_element<T,RightStencil> && other)
+        void operator=(view_element<T,Data,RightStencil> && other)
         {
             if ( other.is_data_here() )
             {
                 if( is_data_here() )
                 {
-                    data_type & ref = data();
+                    Data & ref = data();
                     HPX_ASSERT_MSG( ref.size() == other.size()
                                  , "**CoArray Error** : Try to assign a co-indexed element with invalid size to an existing co-indexed element"
                                  );
@@ -129,10 +127,10 @@ namespace hpx { namespace detail {
 
     // Stencil interfaces
         template<typename ... I>
-        hpx::detail::view_element_boundary<T,Stencil>
+        hpx::detail::view_element_boundary<T,Data,Stencil>
         get_boundary( I ... index )
         {
-            return  hpx::detail::view_element_boundary<T,Stencil>
+            return  hpx::detail::view_element_boundary<T,Data,Stencil>
                     ( std::move(it_)
                     , stencil_
                     , int(index)...
