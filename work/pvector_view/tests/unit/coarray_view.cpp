@@ -33,7 +33,7 @@ int main()
         for (std::size_t j = 0; j<N; j+=tile)
         for (std::size_t i = 0; i<N; i+=tile)
         {
-            hpx::coarray_view<double,2> view ( block, &a(i,j), &a(i+tile-1,j+tile-1), {tile,tile}, {N,N} );
+            hpx::coarray_view<double,2,std::vector<double>> view ( block, &a(i,j), &a(i+tile-1,j+tile-1), {tile,tile}, {N,N} );
 
             for ( auto & v : hpx::local_view(view) )
             {

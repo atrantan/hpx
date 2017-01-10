@@ -99,7 +99,7 @@ namespace hpx {
 
 // Struct defining a stencil_view.
 // A stencil_view is a view of a vector.
-    template <typename T, std::size_t N = 1>
+    template <typename T, std::size_t N, typename Data>
     struct stencil_view
     {
     private:
@@ -107,7 +107,7 @@ namespace hpx {
         using list_type = std::initializer_list<std::size_t>;
 
     public:
-        using boundary_type = stencil_boundary<T,N>;
+        using boundary_type = stencil_boundary<T,N,Data>;
 
         stencil_view(list_type && dimemsions_size = {})
         : minimum_vector_size_(N > 0 ? 1 : 0), has_sizes_( dimemsions_size.size() )

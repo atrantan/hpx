@@ -21,7 +21,7 @@ void stencil_test()
     auto end   = my_vector.end();
 
     {
-        hpx::stencil_view<double,3> my_view({4,4,2});
+        hpx::stencil_view<double,3,std::vector<double>> my_view({4,4,2});
 
         auto up    = my_view.get_boundary(begin,end, 0, 0, 1);
         auto down  = my_view.get_boundary(begin,end, 0, 0,-1);
@@ -59,7 +59,7 @@ void stencil_test()
     }
 
     {
-        hpx::stencil_view<double,2> my_view({8,4});
+        hpx::stencil_view<double,2,std::vector<double>> my_view({8,4});
 
         auto up    = my_view.get_boundary(begin,end,-1, 0);
         auto down  = my_view.get_boundary(begin,end, 1, 0);
