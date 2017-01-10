@@ -17,7 +17,7 @@
 
 #include <utility>
 
-HPX_REGISTER_PARTITIONED_VECTOR(double);
+HPX_REGISTER_PARTITIONED_VECTOR(double,std::vector<double>);
 
 int main()
 {
@@ -33,8 +33,8 @@ int main()
         std::size_t local_width  = 16;
         std::size_t local_leading_dimension  = local_height;
 
-        hpx::coarray<double,2> in  = { block, "in",  {height,width}, hpx::partition<double>(local_height * local_width) };
-        hpx::coarray<double,2> out = { block, "out", {height,width}, hpx::partition<double>(local_height * local_width) };
+        hpx::coarray<double,2,std::vector<double>> in  = { block, "in",  {height,width}, std::vector<double>(local_height * local_width) };
+        hpx::coarray<double,2,std::vector<double>> out = { block, "out", {height,width}, std::vector<double>(local_height * local_width) };
 
         // Ensure that only one locality is putting data into the different partitions
         if(block.this_image() == 0)

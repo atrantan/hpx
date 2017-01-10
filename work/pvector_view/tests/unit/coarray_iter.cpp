@@ -15,7 +15,7 @@
 #include <spmd_block/spmd_block.hpp>
 #include <make_action/make_action.hpp>
 
-HPX_REGISTER_PARTITIONED_VECTOR(double);
+HPX_REGISTER_PARTITIONED_VECTOR(double,std::vector<double>);
 
 int main()
 {
@@ -31,7 +31,7 @@ int main()
         const std::size_t width  = 4;
         const std::size_t num_partitions  = height*width*numlocs;
 
-        hpx::coarray<double,3> a = { block, "a", {height,width,_}, hpx::partition<double>(4, 0.0) };
+        hpx::coarray<double,3,std::vector<double>> a = { block, "a", {height,width,_}, std::vector<double>(4, 0.0) };
 
         int idx = 0;
 

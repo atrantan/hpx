@@ -23,7 +23,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 // Define the vector types to be used.
-HPX_REGISTER_PARTITIONED_VECTOR(int);
+HPX_REGISTER_PARTITIONED_VECTOR(int,std::vector<int>);
 
 ///////////////////////////////////////////////////////////////////////////////
 int delay;  // 0.1 ms
@@ -132,7 +132,7 @@ int hpx_main(boost::program_options::variables_map& vm)
             {
                 const std::size_t partition_size = vector_size / numlocs;
 
-                hpx::coarray<int,1> v( block, "v", {_}, hpx::partition<int>(partition_size) );
+                hpx::coarray<int,1,std::vector<int>> v( block, "v", {_}, std::vector<int>(partition_size) );
 
                 hpx::cout << "hpx::coarray<int>(par): "
                     << double(seq_ref)/foreach_coarray(block,v,test_count)

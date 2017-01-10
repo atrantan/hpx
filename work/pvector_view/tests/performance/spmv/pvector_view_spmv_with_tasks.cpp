@@ -22,7 +22,7 @@ using hpx::_;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Define the vector types to be used.
-HPX_REGISTER_PARTITIONED_VECTOR(double);
+HPX_REGISTER_PARTITIONED_VECTOR(double,std::vector<double>);
 
 struct spmatrix
 {
@@ -66,7 +66,7 @@ struct spmatrix
 boost::uint64_t spmv_coarray( hpx::parallel::spmd_block & block
                             , spmatrix const & a
                             , std::vector<double> & x
-                            , hpx::coarray<double,1> & y
+                            , hpx::coarray<double,1,std::vector<double>> & y
                             , int test_count
                             , int grain_factor
                             , int unroll_factor)
@@ -147,7 +147,7 @@ int hpx_main(boost::program_options::variables_map& vm)
     {
         spmatrix a(filename);
 
-        hpx::coarray<double,1> y( block, "y", {_}, hpx::partition<double>( a.chunksize_ ) );
+        hpx::coarray<double,1,std::vector<double>> y( block, "y", {_}, std::vector<double>( a.chunksize_ ) );
         std::vector<double> x(a.n_);
 
         std::size_t size = 2 * a.nnz_;

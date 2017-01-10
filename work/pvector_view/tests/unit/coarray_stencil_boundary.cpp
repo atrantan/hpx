@@ -14,7 +14,7 @@
 #include <spmd_block/spmd_block.hpp>
 #include <make_action/make_action.hpp>
 
-HPX_REGISTER_PARTITIONED_VECTOR(double);
+HPX_REGISTER_PARTITIONED_VECTOR(double,std::vector<double>);
 
 int main()
 {
@@ -26,17 +26,17 @@ int main()
         const std::size_t height = 32;
         const std::size_t width  = 4;
 
-        hpx::coarray<double,2> a = { block
+        hpx::coarray<double,2,std::vector<double>> a = { block
                                    , "a"
                                    , {height,width}
-                                   , hpx::partition<double>(16, 0.0)
+                                   , std::vector<double>(16, 0.0)
                                    , hpx::stencil_view<double,2>({4,4})
                                    };
 
-        hpx::coarray<double,2> b = { block
+        hpx::coarray<double,2,std::vector<double>> b = { block
                                    , "b"
                                    , {height,width}
-                                   , hpx::partition<double>(16, 0.0)
+                                   , std::vector<double>(16, 0.0)
                                    };
 
 

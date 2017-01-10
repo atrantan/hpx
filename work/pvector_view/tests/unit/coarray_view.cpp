@@ -14,7 +14,7 @@
 #include <pvector_view/local_pvector_view.hpp>
 #include <make_action/make_action.hpp>
 
-HPX_REGISTER_PARTITIONED_VECTOR(double);
+HPX_REGISTER_PARTITIONED_VECTOR(double,std::vector<double>);
 
 int main()
 {
@@ -27,7 +27,7 @@ int main()
         constexpr std::size_t tile     = 10;
         constexpr std::size_t elt_size = 8;
 
-        hpx::coarray<double,2> a = { block, "a", {N,N}, hpx::partition<double>(elt_size) };
+        hpx::coarray<double,2,std::vector<double>> a = { block, "a", {N,N}, std::vector<double>(elt_size) };
         std::size_t idx = 0;
 
         for (std::size_t j = 0; j<N; j+=tile)

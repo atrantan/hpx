@@ -26,7 +26,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 // Define the vector types to be used.
-HPX_REGISTER_PARTITIONED_VECTOR(double);
+HPX_REGISTER_PARTITIONED_VECTOR(double,std::vector<double>);
 ///////////////////////////////////////////////////////////////////////////////
 template <typename Vector>
 boost::uint64_t transpose_matrix(Vector & out, Vector & in, std::size_t height, std::size_t width, std::size_t leading_dimension, int test_count)
@@ -173,8 +173,8 @@ int hpx_main(boost::program_options::variables_map& vm)
     {
         const std::size_t partition_size = local_height*local_width;
 
-        hpx::coarray<double,2> out( block, "out", {height,width}, hpx::partition<double>(partition_size) );
-        hpx::coarray<double,2> in ( block, "in",  {height,width}, hpx::partition<double>(partition_size) );
+        hpx::coarray<double,2,std::vector<double>> out( block, "out", {height,width}, std::vector<double>(partition_size) );
+        hpx::coarray<double,2,std::vector<double>> in ( block, "in",  {height,width}, std::vector<double>(partition_size) );
 
         // hpx::cout << "hpx::coarray<double>: "
         //     << double(seq_ref)/transpose_coarray(block, out, in, height, width, local_height, local_width, local_leading_dimension, test_count)
