@@ -23,7 +23,7 @@ namespace hpx { namespace detail {
 // Struct defining the view of pvector_view element boundary.
     template<typename T, typename Data, typename Stencil>
     struct view_element_boundary
-    : public hpx::vector_iterator<T,Data>
+    : public hpx::partitioned_vector_partition<T,Data>
     {
         using segment_iterator = typename hpx::vector_iterator<T,Data>::segment_iterator;
         using boundary_type = typename Stencil::boundary_type;
@@ -34,7 +34,7 @@ namespace hpx { namespace detail {
                                         , Stencil const & stencil
                                         , I ... i
                                         )
-        : hpx::vector_iterator<T,Data>( it->get_id() )
+        : hpx::partitioned_vector_partition<T,Data>( it->get_id() )
         , is_data_here_( hpx::get_locality_id() == hpx::naming::get_locality_id_from_id(it->get_id()) )
         {
            Data dummy_vector( stencil.get_minimum_vector_size() );     // To avoid assertion failure

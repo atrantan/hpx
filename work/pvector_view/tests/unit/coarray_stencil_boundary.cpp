@@ -30,7 +30,7 @@ int main()
                                    , "a"
                                    , {height,width}
                                    , std::vector<double>(16, 0.0)
-                                   , hpx::stencil_view<double,2>({4,4})
+                                   , hpx::stencil_view<double,2,std::vector<double>>({4,4})
                                    };
 
         hpx::coarray<double,2,std::vector<double>> b = { block
