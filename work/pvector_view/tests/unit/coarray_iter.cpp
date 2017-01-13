@@ -45,7 +45,7 @@ int main()
             }
         }
 
-        block.sync_all()
+        block.sync_all();
 
         if(block.this_image() == 0)
         {
