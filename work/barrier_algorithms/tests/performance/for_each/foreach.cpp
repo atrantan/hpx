@@ -53,7 +53,7 @@ struct wait_op
 ///////////////////////////////////////////////////////////////////////////////
 template<typename Policy>
 boost::uint64_t foreach_vector( hpx::parallel::spmd_block & block
-                              , Policy const & p
+                              , Policy const &
                               , std::vector<int> const & v
                               , int test_count
                               )
@@ -66,7 +66,7 @@ boost::uint64_t foreach_vector( hpx::parallel::spmd_block & block
     for (int i = 0; i != test_count; ++i)
     {
         std::for_each( v.begin(), v.end(), wait_op<vector_type>() );
-        block.barrier(hpx::launch::sync,p, std::to_string(i));
+        block.sync_all();
     }
     return (hpx::util::high_resolution_clock::now() - start) / test_count;
 }
@@ -121,7 +121,7 @@ int hpx_main(boost::program_options::variables_map& vm)
     }
     else {
         auto localities = hpx::find_all_localities();
-        hpx::parallel::define_spmd_block( localities, image
+        hpx::parallel::define_spmd_block( "block", localities, image
                                         , vector_size, delay, barrier_policy, test_count
                                         ).get();
     }

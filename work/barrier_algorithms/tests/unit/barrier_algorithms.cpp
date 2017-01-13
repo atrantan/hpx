@@ -19,9 +19,6 @@ int main()
 
         auto localities = block.find_all_localities();
 
-        hpx::custom_barrier(hpx::launch::sync, localities, "barrier");
-        std::cout<<"Default barrier reached by locality "<<hpx::get_locality_id()<<std::endl;
-
         hpx::custom_barrier(hpx::launch::sync, hpx::detail::central, localities, "central");
         std::cout<<"Central barrier reached by locality "<<hpx::get_locality_id()<<std::endl;
 
@@ -33,7 +30,7 @@ int main()
     };
 
     auto localities = hpx::find_all_localities();
-    hpx::parallel::define_spmd_block( localities, a ).get();
+    hpx::parallel::define_spmd_block( "block", localities, a ).get();
 
     return 0;
 }

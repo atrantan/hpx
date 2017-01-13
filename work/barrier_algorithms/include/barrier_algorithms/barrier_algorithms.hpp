@@ -53,13 +53,13 @@ namespace hpx{
                                         )
            {
                 using barrier_type = hpx::lcos::barrier;
+                using event_type = hpx::future<void>;
 
                 std::size_t numlocs = localities.size();
                 std::size_t root    = hpx::naming::get_locality_id_from_id(localities[0]);
 
                 // create the barrier, register it with AGAS
-                std::shared_ptr<barrier_type> b = std::make_shared<barrier_type>(barrier_name + "_default", numlocs, root);
-                return b->wait(hpx::launch::async).then( [b]( hpx::future<void> event ){ event.get(); }  );
+                return hpx::lcos::barrier(barrier_name + "_default", numlocs, root).wait(hpx::launch::async);
             }
         };
 
@@ -201,29 +201,15 @@ namespace hpx{
         return detail::custom_barrier_impl<Policy>::call(localities, barrier_name + "_hpx_barrier");
     }
 
-    hpx::future<void> custom_barrier( std::vector<hpx::id_type> const & localities
-                                    , std::string && barrier_name
-                                    )
-    {
-        return detail::custom_barrier_impl<>::call(localities, barrier_name + "_hpx_barrier");
-    }
-
 
     template<typename Policy>
-    void custom_barrier(hpx::launch::sync_policy const &, Policy const & p
+    void custom_barrier(hpx::launch::sync_policy const &
+                      , Policy const & p
                       , std::vector<hpx::id_type> const & localities
                       , std::string && barrier_name
                        )
     {
         custom_barrier(p, localities, barrier_name + "_hpx_barrier").get();
-    }
-
-    void custom_barrier(hpx::launch::sync_policy const &
-                      , std::vector<hpx::id_type> const & localities
-                      , std::string && barrier_name
-                       )
-    {
-        custom_barrier(localities, barrier_name + "_hpx_barrier").get();
     }
 }
 
