@@ -45,7 +45,7 @@ int main()
             }
         }
 
-        block.barrier(hpx::launch::sync, "");
+        block.sync_all()
 
         if(block.this_image() == 0)
         {
@@ -73,7 +73,7 @@ int main()
 
     auto localities = hpx::find_all_localities();
 
-    hpx::parallel::define_spmd_block( localities, image_coarray ).get();
+    hpx::parallel::define_spmd_block( "block", localities, image_coarray ).get();
 
     return 0;
 }

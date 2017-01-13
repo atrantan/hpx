@@ -21,9 +21,10 @@ int main()
 
     auto localities = hpx::find_all_localities();
 
-    hpx::parallel::define_spmd_block(localities, bsp1 ).get();
+    hpx::parallel::define_spmd_block("block1", localities, bsp1 ).get();
 
-    hpx::parallel::define_spmd_block(   localities
+    hpx::parallel::define_spmd_block(   "block2"
+                                    ,   localities
                                     ,   [](hpx::parallel::spmd_block block)
                                         {
                                             std::cout<<"Enter in BSP2"<<std::endl;

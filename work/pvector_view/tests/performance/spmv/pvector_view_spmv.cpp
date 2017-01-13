@@ -108,7 +108,7 @@ boost::uint64_t spmv_coarray( hpx::parallel::spmd_block & block
 
         if( !( (iter + 1) % unroll_factor) )
         {
-            block.barrier(hpx::launch::sync, "spmv" + iter);
+            block.sync_all();
         }
     }
     return ( hpx::util::high_resolution_clock::now() - start ) / test_count;
@@ -143,7 +143,7 @@ int hpx_main(boost::program_options::variables_map& vm)
     };
 
     auto localities = hpx::find_all_localities();
-    hpx::parallel::define_spmd_block( localities, image_coarray, filename, test_count, unroll_factor).get();
+    hpx::parallel::define_spmd_block( "block", localities, image_coarray, filename, test_count, unroll_factor).get();
 
     return hpx::finalize();
 }

@@ -80,7 +80,7 @@ boost::uint64_t transpose_coarray(  hpx::parallel::spmd_block & block
                 out(j,i) = in(i,j);
             }
 
-            block.barrier("transpose" + iter)
+            block.sync_all(hpx::launch::async)
             .then(
                 [&](hpx::future<void> f1)
                 {
@@ -99,7 +99,7 @@ boost::uint64_t transpose_coarray(  hpx::parallel::spmd_block & block
                         }
                     }
 
-                    return block.barrier("local_transpose" + iter);
+                    return  block.sync_all(hpx::launch::async);
                  }
             ).wait();
 
@@ -170,7 +170,7 @@ int hpx_main(boost::program_options::variables_map& vm)
 
 
         auto localities = hpx::find_all_localities();
-        hpx::parallel::define_spmd_block( localities, image_coarray
+        hpx::parallel::define_spmd_block( "block", localities, image_coarray
                                         , height, width, local_height, local_width, local_leading_dimension, test_count, seq_ref
                                         ).get();
     }

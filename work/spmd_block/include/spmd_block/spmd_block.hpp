@@ -12,10 +12,12 @@
 #include <hpx/runtime/naming/name.hpp>
 #include <hpx/runtime/serialization/serialize.hpp>
 #include <hpx/lcos/future.hpp>
+#include <hpx/lcos/barrier.hpp>
 #include <hpx/lcos/broadcast.hpp>
 
-#include <barrier_algorithms/barrier_algorithms.hpp>
 #include <make_action/make_action.hpp>
+
+#include <memory>
 
 namespace hpx { namespace parallel{
 
@@ -23,8 +25,8 @@ namespace hpx { namespace parallel{
     {
         spmd_block(){}
 
-        spmd_block( std::vector<hpx::naming::id_type> const & localities )
-        : localities_(localities)
+        spmd_block( std::string name, std::vector<hpx::naming::id_type> const & localities )
+        : name_(name), localities_(localities)
         {}
 
         std::vector<hpx::naming::id_type> find_all_localities() const
@@ -50,52 +52,59 @@ namespace hpx { namespace parallel{
             return rank;
         }
 
-        template<typename Policy>
-        void barrier(hpx::launch::sync_policy const &, Policy const & p, std::string && bname ) const
+
+        void sync_all() const
         {
-            hpx::custom_barrier(hpx::launch::sync, p, localities_, std::move(bname) );
+
+           if (!barrier_)
+           {
+               barrier_ = std::make_shared<hpx::lcos::barrier>(
+                 name_ + "_barrier"
+               , localities_.size()
+               , hpx::naming::get_locality_id_from_id(localities_[0])
+               );
+           }
+
+           barrier_->wait();
         }
 
-        template<typename Policy>
-        hpx::future<void> barrier(Policy const & p, std::string && bname ) const
+        hpx::future<void> sync_all(hpx::launch::async_policy const &) const
         {
-            return hpx::custom_barrier( p, localities_, std::move(bname) );
-        }
+           if (!barrier_)
+           {
+               barrier_ = std::make_shared<hpx::lcos::barrier>(
+                 name_+ "_barrier"
+               , localities_.size()
+               , hpx::naming::get_locality_id_from_id(localities_[0])
+               );
+           }
 
-
-        void barrier(hpx::launch::sync_policy const &, std::string && bname ) const
-        {
-            hpx::custom_barrier(hpx::launch::sync, localities_, std::move(bname) );
-        }
-
-        hpx::future<void> barrier( std::string && bname ) const
-        {
-            return hpx::custom_barrier( localities_, std::move(bname) );
+           return barrier_->wait(hpx::launch::async);
         }
 
     private:
+        std::string name_;
         std::vector< hpx::naming::id_type > localities_;
+        mutable std::shared_ptr<hpx::lcos::barrier> barrier_;
 
     private:
         friend class hpx::serialization::access;
 
         template <typename Archive>
-        void serialize(Archive& ar, unsigned)
+        void serialize(Archive& ar, unsigned int const)
         {
-            ar & localities_;
+            ar & name_ & localities_;
         }
     };
 
     template <typename F, typename ... Args>
-    hpx::future<void> define_spmd_block(std::vector<hpx::naming::id_type> const & localities, F && f, Args && ... args)
+    hpx::future<void> define_spmd_block(std::string && name, std::vector<hpx::naming::id_type> const & localities, F && f, Args && ... args)
     {
         constexpr auto a = hpx::make_action(std::move(f));
 
         std::vector< hpx::future<void> > join;
 
-        spmd_block block(localities);
-
-/*        return hpx::lcos::broadcast<decltype(a)>(localities, block, std::forward<Args>(args)...);*/
+        spmd_block block( name, localities);
 
         for (auto & l : localities)
         {

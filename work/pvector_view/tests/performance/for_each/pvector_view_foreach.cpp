@@ -98,7 +98,7 @@ boost::uint64_t foreach_coarray(  hpx::parallel::spmd_block & block
         {
             auto const & vlocal = v.data(_);
             std::for_each( vlocal.begin(), vlocal.end(), wait_op<Coarray>() );
-            block.barrier(hpx::launch::sync, std::to_string(i) );
+            block.sync_all();
         }
         time.push_back( hpx::util::high_resolution_clock::now() - start );
     }
@@ -154,7 +154,7 @@ int hpx_main(boost::program_options::variables_map& vm)
 
         // 2) Coarray and for_each
         auto localities = hpx::find_all_localities();
-        hpx::parallel::define_spmd_block( localities, image_coarray
+        hpx::parallel::define_spmd_block( "block", localities, image_coarray
                                         , vector_size, delay, test_count, seq_ref
                                         ).get();
     }

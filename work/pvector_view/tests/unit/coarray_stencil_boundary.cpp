@@ -47,7 +47,7 @@ int main()
 
     auto localities = hpx::find_all_localities();
 
-    hpx::parallel::define_spmd_block( localities, image_coarray ).get();
+    hpx::parallel::define_spmd_block( "block", localities, image_coarray ).get();
 
     return 0;
 }

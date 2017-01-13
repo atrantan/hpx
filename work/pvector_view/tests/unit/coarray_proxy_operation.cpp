@@ -58,7 +58,7 @@ int main()
             }
         }
 
-        block.barrier("init")
+        block.sync_all(hpx::launch::async)
         .then(
             [&](hpx::future<void> f1) -> hpx::future<void>
             {
@@ -71,7 +71,7 @@ int main()
                     out(j,i) = in(i,j);
                 }
 
-                return block.barrier("transpose");
+                return  block.sync_all(hpx::launch::async);
              }
         )
         .then(
@@ -90,7 +90,7 @@ int main()
                     }
                 }
 
-                return block.barrier("local_transpose");
+                return block.sync_all(hpx::launch::async);
             }
         ).wait();
 
@@ -136,7 +136,7 @@ int main()
     };
 
     auto localities = hpx::find_all_localities();
-    hpx::parallel::define_spmd_block( localities, image_coarray ).get();
+    hpx::parallel::define_spmd_block( "block", localities, image_coarray ).get();
 
     return 0;
 }
