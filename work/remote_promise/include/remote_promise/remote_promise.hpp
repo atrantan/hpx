@@ -142,12 +142,8 @@ namespace hpx { namespace detail{
     public:
         remote_promise(){}
 
-        explicit remote_promise( hpx::id_type const & where )
-        : base_type( hpx::new_<server_type>(where) )
-        {}
-
-        explicit remote_promise( hpx::future< hpx::id_type > && fwhere )
-        : base_type( hpx::new_<server_type>(fwhere.get()) )
+        explicit remote_promise( hpx::future< hpx::id_type > && id )
+        : base_type( std::move(id) )
         {}
 
         // Return the pinned pointer to the underlying component
@@ -168,28 +164,24 @@ namespace hpx {
         using server_type = hpx::server::remote_promise<T>;
 
         explicit remote_promise()
-        : is_promise_here_( false )
-        {
-            ptr_ = std::make_shared<client_type>();
-        }
+        : is_promise_here_( false ), client_()
+        {}
 
         explicit remote_promise(hpx::id_type const & where )
-        : is_promise_here_( hpx::find_here() == where )
-        {
-            ptr_ = std::make_shared<client_type>(where);
-        }
+        : is_promise_here_( hpx::find_here() == where ), client_( hpx::new_<client_type>(where) )
+        {}
 
         hpx::future<T> get_future()
         {
             if( is_promise_here_ )
             {
-                return ptr_->get_ptr()->get_future();
+                return client_.get_ptr()->get_future();
             }
             else
             {
-                HPX_ASSERT( ptr_->get_id() );
+                HPX_ASSERT( client_.get_id() );
                 return hpx::async<typename server_type::get_value_action>
-                (  ptr_->get_id() );
+                (  client_.get_id() );
             }
         }
 
@@ -198,11 +190,11 @@ namespace hpx {
             typename server_type::set_value_action act;
 
             if( is_promise_here_ )
-                ptr_->get_ptr()->set_value( std::move(val) );
+                client_.get_ptr()->set_value( std::move(val) );
             else
             {
-                HPX_ASSERT( ptr_->get_id() );
-                hpx::apply(act, ptr_->get_id(), std::move(val));
+                HPX_ASSERT( client_.get_id() );
+                hpx::apply(act, client_.get_id(), std::move(val));
             }
         }
 
@@ -211,27 +203,27 @@ namespace hpx {
             typename server_type::set_exception_action act;
 
             if( is_promise_here_ )
-                return ptr_->get_ptr()->set_exception(p);
+                return client_.get_ptr()->set_exception(p);
             else
             {
-                HPX_ASSERT(ptr_->get_id());
-                hpx::apply(act, ptr_->get_id(), p);
+                HPX_ASSERT(client_.get_id());
+                hpx::apply(act, client_.get_id(), p);
             }
         }
 
         inline void register_as(std::string && name)
         {
-            ptr_->register_as( std::move(name) );
+            client_.register_as( std::move(name) );
         }
 
         inline void connect_to(std::string && name)
         {
-            ptr_->connect_to( std::move(name) );
+           client_.connect_to( std::move(name) );
         }
 
     private:
         bool is_promise_here_;
-        std::shared_ptr< hpx::detail::remote_promise<T> > ptr_;
+        client_type client_;
     };
 
     template<>
@@ -240,29 +232,28 @@ namespace hpx {
         using client_type = hpx::detail::remote_promise<void>;
         using server_type = hpx::server::remote_promise<void>;
 
+
+// FIXME : Not the good approach
+
         explicit remote_promise()
-        : is_promise_here_( false )
-        {
-            ptr_ = std::make_shared<client_type>();
-        }
+        : is_promise_here_( false ), client_()
+        {}
 
         explicit remote_promise(hpx::id_type const & where )
-        : is_promise_here_( hpx::find_here() == where )
-        {
-            ptr_ = std::make_shared<client_type>(where);
-        }
+        : is_promise_here_( hpx::find_here() == where ), client_( hpx::new_<client_type>(where) )
+        {}
 
         hpx::future<void> get_future()
         {
             if( is_promise_here_ )
             {
-                return ptr_->get_ptr()->get_future();
+                return client_.get_ptr()->get_future();
             }
             else
             {
-                HPX_ASSERT( ptr_->get_id() );
+                HPX_ASSERT( client_.get_id() );
                 return hpx::async<typename server_type::get_value_action>
-                (  ptr_->get_id() );
+                (  client_.get_id() );
             }
         }
 
@@ -271,11 +262,11 @@ namespace hpx {
             typename server_type::set_value_action act;
 
             if( is_promise_here_ )
-                ptr_->get_ptr()->set_value();
+                client_.get_ptr()->set_value();
             else
             {
-                HPX_ASSERT( ptr_->get_id() );
-                hpx::apply(act, ptr_->get_id());
+                HPX_ASSERT( client_.get_id() );
+                hpx::apply(act, client_.get_id());
             }
         }
 
@@ -284,27 +275,27 @@ namespace hpx {
             typename server_type::set_exception_action act;
 
             if( is_promise_here_ )
-                return ptr_->get_ptr()->set_exception(p);
+                return client_.get_ptr()->set_exception(p);
             else
             {
-                HPX_ASSERT(ptr_->get_id());
-                hpx::apply(act, ptr_->get_id(), p );
+                HPX_ASSERT(client_.get_id());
+                hpx::apply(act, client_.get_id(), p );
             }
         }
 
         inline void register_as(std::string && name)
         {
-            ptr_->register_as( std::move(name) );
+            client_.register_as( std::move(name) );
         }
 
         inline void connect_to(std::string && name)
         {
-            ptr_->connect_to( std::move(name) );
+            client_.connect_to( std::move(name) );
         }
 
     private:
         bool is_promise_here_;
-        std::shared_ptr< hpx::detail::remote_promise<void> > ptr_;
+        client_type client_;
     };
 }
 

@@ -46,5 +46,7 @@ int main()
     hpx::future<void> f1 = hpx::async(p, orig);
     hpx::future<void> f2 = hpx::async(c, dest, dest );
 
+    hpx::wait_all(f1,f2);
+
     return 0;
 }
