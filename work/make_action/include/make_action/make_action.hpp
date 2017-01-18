@@ -81,16 +81,24 @@ namespace hpx{
           using type = typename make_action_using_sequence<F,return_type,sequence>::type;
         };
 
+        template<typename F, bool Enable = !std::is_assignable<F,F>::value && std::is_empty<F>::value >
+        struct action_maker;
 
         template<typename F>
-        struct action_maker
+        struct action_maker<F, true>
         {
             constexpr typename action_from_lambda<F>::type operator += (F* f)
             {
-                static_assert( !std::is_assignable<F,F>::value && std::is_empty<F>::value
-                             ,"Lambda without capture list is required"
-                            );
                 return typename action_from_lambda<F>::type();
+            }
+        };
+
+        template<typename F>
+        struct action_maker<F, false>
+        {
+            constexpr F operator += (F* f)
+            {
+                return F();
             }
         };
     }

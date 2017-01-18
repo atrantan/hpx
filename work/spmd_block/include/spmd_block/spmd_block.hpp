@@ -55,7 +55,6 @@ namespace hpx { namespace parallel{
 
         void sync_all() const
         {
-
            if (!barrier_)
            {
                barrier_ = std::make_shared<hpx::lcos::barrier>(
