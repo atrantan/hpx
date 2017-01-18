@@ -61,7 +61,6 @@ namespace hpx { namespace parallel{
                barrier_ = std::make_shared<hpx::lcos::barrier>(
                  name_ + "_barrier"
                , localities_.size()
-               , hpx::naming::get_locality_id_from_id(localities_[0])
                );
            }
 
@@ -75,7 +74,6 @@ namespace hpx { namespace parallel{
                barrier_ = std::make_shared<hpx::lcos::barrier>(
                  name_+ "_barrier"
                , localities_.size()
-               , hpx::naming::get_locality_id_from_id(localities_[0])
                );
            }
 
