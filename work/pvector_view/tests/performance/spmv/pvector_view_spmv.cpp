@@ -113,24 +113,6 @@ boost::uint64_t spmv_coarray( hpx::parallel::spmd_block & block
     }
     return ( hpx::util::high_resolution_clock::now() - start ) / test_count;
 }
-
-void image( hpx::parallel::spmd_block block, std::string filename, int test_count, int unroll_factor)
-{
-    spmatrix a(filename);
-
-    hpx::coarray<double,1,std::vector<double>> y( block, "y", {_}, std::vector<double>( a.chunksize_ ) );
-    std::vector<double> x(a.n_);
-
-    std::size_t size = 2 * a.nnz_;
-    std::size_t datasize = (a.nnz_ + 2*a.m_)*sizeof(double);
-
-    boost::uint64_t toc = spmv_coarray(block,a,x,y,test_count,unroll_factor);
-    printf("performances : %f GFlops\n", double(size)/toc);
-    printf("performances : %f GBs\n", double(datasize)/toc);
-}
-HPX_DEFINE_PLAIN_ACTION(image, image_action);
-
-
 ///////////////////////////////////////////////////////////////////////////////
 
 int hpx_main(boost::program_options::variables_map& vm)
@@ -144,8 +126,24 @@ int hpx_main(boost::program_options::variables_map& vm)
         hpx::cout << "test_count cannot be zero or negative...\n" << hpx::flush;
     }
 
+    auto image_coarray =
+    []( hpx::parallel::spmd_block block, std::string filename, int test_count, int unroll_factor)
+    {
+        spmatrix a(filename);
+
+        hpx::coarray<double,1,std::vector<double>> y( block, "y", {_}, std::vector<double>( a.chunksize_ ) );
+        std::vector<double> x(a.n_);
+
+        std::size_t size = 2 * a.nnz_;
+        std::size_t datasize = (a.nnz_ + 2*a.m_)*sizeof(double);
+
+        boost::uint64_t toc = spmv_coarray(block,a,x,y,test_count,unroll_factor);
+        printf("performances : %f GFlops\n", double(size)/toc);
+        printf("performances : %f GBs\n", double(datasize)/toc);
+    };
+
     auto localities = hpx::find_all_localities();
-    hpx::parallel::define_spmd_block( "block", localities, image_action(), filename, test_count, unroll_factor).get();
+    hpx::parallel::define_spmd_block( "block", localities, image_coarray, filename, test_count, unroll_factor).get();
 
     return hpx::finalize();
 }
