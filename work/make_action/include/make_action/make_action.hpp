@@ -45,7 +45,7 @@ namespace hpx{
         template<class F, typename ReturnType, template <typename...> class T, typename ... Args>
         struct make_action_using_sequence< F, ReturnType, T<Args...> >
         {
-          using type = typename hpx::actions::make_direct_action<decltype(&caller<F,ReturnType,Args...>::call)
+          using type = typename hpx::actions::make_action<decltype(&caller<F,ReturnType,Args...>::call)
                                                           ,&caller<F,ReturnType,Args...>::call
                                                           >::type;
         };
