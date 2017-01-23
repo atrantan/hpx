@@ -8,6 +8,7 @@
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_main.hpp>
 #include <hpx/lcos/barrier.hpp>
+#include <hpx/lcos/broadcast.hpp>
 
 #include <make_action/make_action.hpp>
 
@@ -28,30 +29,17 @@ int user_function(int x)
 }
 
 
-constexpr auto a_lambda = hpx::make_action([](int x)
-{
-    return user_function(x);
-});
-
 int main()
 {
+    constexpr auto a_lambda =
+        hpx::make_action([](int x)
+                         {
+                            return user_function(x);
+                         });
+
     auto localities = hpx::find_all_localities();
 
-    {
-        std::vector< hpx::future<int> > join;
-
-        int i=0;
-
-        for (auto & l : localities)
-        {
-            if ( l != hpx::find_here() )
-            join.push_back( hpx::async(a_lambda, l, i++) );
-        }
-
-        join.push_back( hpx::async( a_lambda, hpx::find_here(), i++) );
-
-        hpx::wait_all(join);
-    }
+    hpx::lcos::broadcast( a_lambda, localities, 40).get();
 
     return 0;
 }

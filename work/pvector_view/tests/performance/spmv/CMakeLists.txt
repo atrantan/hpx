@@ -45,7 +45,7 @@ foreach(test ${tests})
     set(sources ${test}.cpp)
     add_executable(${test}_test ${sources})
     set_target_properties(${test}_test PROPERTIES COMPILE_FLAGS "-m64")
-    target_link_libraries (${test}_test  ${mkl_seq_lib_name} ${HPX_LIBRARIES} hpx_partitioned_vector hpx_remote_promise mmio)
+    target_link_libraries (${test}_test  ${mkl_seq_lib_name} ${HPX_LIBRARIES} hpx_partitioned_vector mmio)
 endforeach()
 
 # set(test mkl_threaded_spmv)

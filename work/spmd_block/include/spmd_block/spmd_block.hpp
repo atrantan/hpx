@@ -55,6 +55,7 @@ namespace hpx { namespace parallel{
 
         void sync_all() const
         {
+
            if (!barrier_)
            {
                barrier_ = std::make_shared<hpx::lcos::barrier>(
@@ -98,20 +99,9 @@ namespace hpx { namespace parallel{
     hpx::future<void> define_spmd_block(std::string && name, std::vector<hpx::naming::id_type> const & localities, F && f, Args && ... args)
     {
         constexpr auto a = hpx::make_action(std::move(f));
+        spmd_block block(name, localities);
 
-        std::vector< hpx::future<void> > join;
-
-        spmd_block block( name, localities);
-
-        for (auto & l : localities)
-        {
-            if ( l != hpx::find_here() )
-            join.push_back( hpx::async(a, l, block, std::forward<Args>(args)...) );
-        }
-
-        join.push_back( hpx::async( a, hpx::find_here(), block, std::forward<Args>(args)...) );
-
-        return hpx::when_all(join).then( [](auto join_){ join_.get(); } );
+        return hpx::lcos::broadcast( a, localities, block, std::forward<Args>(args)...);
     }
 
 
