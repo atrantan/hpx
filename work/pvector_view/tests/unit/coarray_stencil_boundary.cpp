@@ -19,35 +19,29 @@ HPX_REGISTER_PARTITIONED_VECTOR(double,std::vector<double>);
 int main()
 {
     auto image_coarray =
-    [](hpx::parallel::spmd_block block)
-    {
-        using hpx::_;
+        [](hpx::parallel::spmd_block block)
+        {
+            using hpx::_;
 
-        const std::size_t height = 32;
-        const std::size_t width  = 4;
+            const std::size_t height = 32;
+            const std::size_t width  = 4;
 
-        hpx::coarray<double,2,std::vector<double>> a = { block
-                                   , "a"
-                                   , {height,width}
-                                   , std::vector<double>(16, 0.0)
-                                   , hpx::stencil_view<double,2,std::vector<double>>({4,4})
-                                   };
+            hpx::coarray<double,2,std::vector<double>> a
+                = { block, "a", {height,width}, std::vector<double>(16, 0.0),
+                    hpx::stencil_view<double,2,std::vector<double>>({4,4}) };
 
-        hpx::coarray<double,2,std::vector<double>> b = { block
-                                   , "b"
-                                   , {height,width}
-                                   , std::vector<double>(16, 0.0)
-                                   };
+            hpx::coarray<double,2,std::vector<double>> b
+                = { block, "b", {height,width}, std::vector<double>(16, 0.0)};
 
 
-        a(2,1).get_boundary(0,-1) = a(2,0).get_boundary(0,1);
-        b(2,1).get_boundary(0,-1) = b(2,0).get_boundary(0,1);
+            a(2,1).get_boundary(0,-1) = a(2,0).get_boundary(0,1);
+            b(2,1).get_boundary(0,-1) = b(2,0).get_boundary(0,1);
 
-    };
+        };
 
     auto localities = hpx::find_all_localities();
 
-    hpx::parallel::define_spmd_block( "block", localities, image_coarray ).get();
+    hpx::parallel::define_spmd_block("block", localities, image_coarray).get();
 
     return 0;
 }

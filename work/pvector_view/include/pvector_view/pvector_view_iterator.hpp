@@ -21,12 +21,11 @@ namespace hpx {
 
     template<typename T, std::size_t N, typename Data, typename Stencil>
     class pvector_view_iterator
-    : public boost::iterator_facade
-    < pvector_view_iterator<T,N,Data,Stencil>      // CRTP, just use the pvector_view_iterator name
-    , hpx::detail::view_element<T,Data,Stencil>
-    , std::random_access_iterator_tag // type of traversal allowed
-    , hpx::detail::view_element<T,Data,Stencil>   // Replace reference return by a view_element return
-    >
+    : public boost::iterator_facade<
+                pvector_view_iterator<T,N,Data,Stencil>,
+                hpx::detail::view_element<T,Data,Stencil>,
+                std::random_access_iterator_tag,
+                hpx::detail::view_element<T,Data,Stencil> >
     {
     private:
         using pvector_iterator = hpx::vector_iterator<T,Data>;
@@ -43,12 +42,12 @@ namespace hpx {
         std::size_t carry = dist;
         std::size_t tmp;
 
-  // More expensive than a usual incrementation but did not find another solution :/
+// More expensive than a usual incrementation but did not find another solution
         (void)std::initializer_list<int>
-        { ( static_cast<void>( carry   -= tmp = (carry/sw_basis_[max-I]) * sw_basis_[max-I]
-                             , offset  += (tmp/sw_basis_[max-I]) * hw_basis_[max-I]
-                             )
-          , 0)...
+        { ( static_cast<void>(
+                carry   -= tmp = (carry/sw_basis_[max-I]) * sw_basis_[max-I],
+                offset  += (tmp/sw_basis_[max-I]) * hw_basis_[max-I]),
+            0 )...
         };
 
         return offset;

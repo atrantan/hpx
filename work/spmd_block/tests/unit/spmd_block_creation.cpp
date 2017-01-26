@@ -23,11 +23,11 @@ int main()
 
     hpx::parallel::define_spmd_block("block1", localities, bsp1 ).get();
 
-    hpx::parallel::define_spmd_block(   "block2"
-                                    ,   localities
-                                    ,   [](hpx::parallel::spmd_block block)
+    hpx::parallel::define_spmd_block(  "block2", localities,
+                                       [](hpx::parallel::spmd_block block)
                                         {
-                                            std::cout<<"Enter in BSP2"<<std::endl;
+                                            std::cout<< "Enter in BSP2"
+                                                     << std::endl;
                                         }
                                     ).get();
 

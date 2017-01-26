@@ -25,14 +25,16 @@ namespace hpx { namespace detail {
     struct view_element
     : public hpx::partitioned_vector_partition<T,Data>
     {
-        using segment_iterator = typename hpx::vector_iterator<T,Data>::segment_iterator;
+        using segment_iterator
+            = typename hpx::vector_iterator<T,Data>::segment_iterator;
 
     public:
         explicit view_element(segment_iterator it, Stencil const & stencil)
-        : hpx::partitioned_vector_partition<T,Data>( it->get_id() )
-        , is_data_here_( hpx::get_locality_id() == hpx::naming::get_locality_id_from_id(it->get_id()) )
-        , it_(it)
-        , stencil_(stencil)
+        : hpx::partitioned_vector_partition<T,Data>( it->get_id() ),
+          is_data_here_(hpx::get_locality_id()
+            == hpx::naming::get_locality_id_from_id(it->get_id()) ),
+          it_(it),
+          stencil_(stencil)
         {}
 
         view_element(view_element const &) = default;
@@ -65,7 +67,7 @@ namespace hpx { namespace detail {
         }
 
     // Unsafe reference get operation
-    // Warning : be careful in making this operation be called after checking with is_data_here()
+    // Warning : Make sure that is_data_here() has been called before
         Data & data()
         {
             return this->get_ptr()->get_data();
@@ -77,15 +79,16 @@ namespace hpx { namespace detail {
         }
 
     // Unsafe assignment (Put operation)
-    // Warning : be careful in making this operation be invoked by only one locality at a time
+    // Warning : Make sure that operator=() is called in only one locality
         void operator=(Data && other)
         {
             if ( is_data_here() )
             {
                 Data & ref = data();
-                HPX_ASSERT_MSG( ref.size() == other.size()
-                , "**CoArray Error** : Try to assign a vector with invalid size to an existing co-indexed element"
-                );
+
+                HPX_ASSERT_MSG( ref.size() == other.size(), \
+                    "**CoArray Error** : Vector r-value has invalid size");
+
                 ref = other;
             }
             else
@@ -103,9 +106,11 @@ namespace hpx { namespace detail {
                 if( is_data_here() )
                 {
                     Data & ref = data();
-                    HPX_ASSERT_MSG( ref.size() == other.size()
-                                 , "**CoArray Error** : Try to assign a co-indexed element with invalid size to an existing co-indexed element"
-                                 );
+
+                    HPX_ASSERT_MSG( ref.size() == other.size(),
+                        "**CoArray Error** : Co-indexed element r-value has " \
+                        "invalid size");
+
                     ref = other.data();
                 }
 
@@ -130,11 +135,8 @@ namespace hpx { namespace detail {
         hpx::detail::view_element_boundary<T,Data,Stencil>
         get_boundary( I ... index )
         {
-            return  hpx::detail::view_element_boundary<T,Data,Stencil>
-                    ( std::move(it_)
-                    , stencil_
-                    , int(index)...
-                    );
+            return hpx::detail::view_element_boundary<T,Data,Stencil>(
+                std::move(it_), stencil_, int(index)... );
         }
 
 

@@ -19,7 +19,8 @@ int user_function(int x)
     std::size_t here = hpx::get_locality_id();
     std::size_t numlocs = hpx::get_num_localities(hpx::launch::sync) ;
 
-    std::cout <<"Welcome to locality "<< here <<" among "<< numlocs <<" localities"<<std::endl;
+    std::cout << "Welcome to locality " << here
+              << " among " << numlocs <<" localities"<<std::endl;
 
     // create the barrier, register it with AGAS
     hpx::lcos::barrier b("barrier_name",numlocs);

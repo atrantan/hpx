@@ -59,7 +59,8 @@ struct wait_op
 
 ///////////////////////////////////////////////////////////////////////////////
 template <typename Policy, typename Vector>
-boost::uint64_t foreach_vector(Policy const& policy, Vector const& v, int test_count)
+boost::uint64_t foreach_vector(
+    Policy const& policy, Vector const& v, int test_count)
 {
     typedef typename Vector::value_type value_type;
 
@@ -114,13 +115,12 @@ int hpx_main(boost::program_options::variables_map& vm)
     delay = vm["work_delay"].as<int>();
     int test_count = vm["test_count"].as<int>();
 
-    auto image_coarray
-    =   []( hpx::parallel::spmd_block block
-          , std::size_t vector_size
-          , int delay_
-          , int test_count
-          , boost::uint64_t seq_ref
-          )
+    auto image_coarray =
+        []( hpx::parallel::spmd_block block,
+            std::size_t vector_size,
+            int delay_,
+            int test_count,
+            boost::uint64_t seq_ref)
         {
             using hpx::_;
             // Constants used by Co-arrays
@@ -132,7 +132,8 @@ int hpx_main(boost::program_options::variables_map& vm)
             {
                 const std::size_t partition_size = vector_size / numlocs;
 
-                hpx::coarray<int,1,std::vector<int>> v( block, "v", {_}, std::vector<int>(partition_size) );
+                hpx::coarray<int,1,std::vector<int>> v(
+                    block, "v", {_}, std::vector<int>(partition_size) );
 
                 hpx::cout << "hpx::coarray<int>(par): "
                     << double(seq_ref)/foreach_coarray(block,v,test_count)
@@ -150,13 +151,14 @@ int hpx_main(boost::program_options::variables_map& vm)
     else {
         // 1) retrieve reference time
         std::vector<int> ref(vector_size);
-        boost::uint64_t seq_ref = foreach_vector(hpx::parallel::seq, ref, test_count); //-V106
+        boost::uint64_t seq_ref
+            = foreach_vector(hpx::parallel::seq,ref, test_count); //-V106
 
         // 2) Coarray and for_each
         auto localities = hpx::find_all_localities();
-        hpx::parallel::define_spmd_block( "block", localities, image_coarray
-                                        , vector_size, delay, test_count, seq_ref
-                                        ).get();
+
+        hpx::parallel::define_spmd_block( "block", localities, image_coarray,
+            vector_size, delay, test_count, seq_ref ).get();
     }
 
     return hpx::finalize();
@@ -178,7 +180,7 @@ int main(int argc, char* argv[])
         , "loop delay per element in nanoseconds (default: 1000000)")
 
         ("test_count"
-        , boost::program_options::value<int>()->default_value(10) // for overall time of 10 ms
+        , boost::program_options::value<int>()->default_value(10)
         , "number of tests to be averaged (default: 10)")
         ;
 

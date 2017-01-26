@@ -52,11 +52,11 @@ struct wait_op
 };
 ///////////////////////////////////////////////////////////////////////////////
 template<typename Policy>
-boost::uint64_t foreach_vector( hpx::parallel::spmd_block & block
-                              , Policy const &
-                              , std::vector<int> const & v
-                              , int test_count
-                              )
+boost::uint64_t foreach_vector(
+    hpx::parallel::spmd_block & block,
+    Policy const &,
+    std::vector<int> const & v,
+    int test_count)
 {
     using vector_type = std::vector<int>;
 
@@ -80,36 +80,39 @@ int hpx_main(boost::program_options::variables_map& vm)
     int test_count = vm["test_count"].as<int>();
 
     auto image =
-    []( hpx::parallel::spmd_block block
-      , std::size_t vector_size
-      , int delay_
-      , std::string barrier_policy
-      , int test_count
-      )
-    {
-        delay = delay_;
+        []( hpx::parallel::spmd_block block,
+            std::size_t vector_size,
+            int delay_,
+            std::string barrier_policy,
+            int test_count)
+        {
+            delay = delay_;
 
-        std::vector<int> v(vector_size);
+            std::vector<int> v(vector_size);
 
-        if(barrier_policy == "central")
-        {
-            hpx::cout << "Time : "
-                << foreach_vector(block, hpx::detail::central, v, test_count)
-                << " ns\n";
-        }
-        else if(barrier_policy == "dissemination")
-        {
-            hpx::cout << "Time : "
-                << foreach_vector(block, hpx::detail::dissemination, v, test_count)
-                << " ns\n";
-        }
-        else
-        {
-            hpx::cout << "Time : "
-                << foreach_vector(block, hpx::detail::pairwise, v, test_count)
-                << " ns\n";
-        }
-    };
+            if(barrier_policy == "central")
+            {
+                hpx::cout << "Time : "
+                    << foreach_vector(block, hpx::detail::central, v,
+                        test_count)
+                    << " ns\n";
+            }
+            else if(barrier_policy == "dissemination")
+            {
+                hpx::cout << "Time : "
+                    << foreach_vector(
+                            block, hpx::detail::dissemination, v,
+                                test_count)
+                    << " ns\n";
+            }
+            else
+            {
+                hpx::cout << "Time : "
+                    << foreach_vector(block, hpx::detail::pairwise, v,
+                            test_count)
+                    << " ns\n";
+            }
+        };
 
 
     // verify that input is within domain of program
@@ -121,9 +124,9 @@ int hpx_main(boost::program_options::variables_map& vm)
     }
     else {
         auto localities = hpx::find_all_localities();
-        hpx::parallel::define_spmd_block( "block", localities, image
-                                        , vector_size, delay, barrier_policy, test_count
-                                        ).get();
+        hpx::parallel::define_spmd_block(
+            "block", localities, image, vector_size, delay, barrier_policy,
+             test_count).get();
     }
 
     return hpx::finalize();
@@ -149,7 +152,7 @@ int main(int argc, char* argv[])
         , "barrier_policy (default: central)")
 
         ("test_count"
-        , boost::program_options::value<int>()->default_value(100) // for overall time of 10 ms
+        , boost::program_options::value<int>()->default_value(100)
         , "number of tests to be averaged (default: 100)")
         ;
 

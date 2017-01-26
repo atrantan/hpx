@@ -16,11 +16,10 @@ struct bools;
 
 template<typename ... T>
 struct are_integral
-: public std::integral_constant< bool
-                               , std::is_same< bools<true, std::is_integral<T>::value ...>
-                                             , bools<std::is_integral<T>::value ...,true >
-                                             >::value
-                               >
+: public std::integral_constant< bool,
+    std::is_same<
+        bools<true, std::is_integral<T>::value ...>,
+        bools<std::is_integral<T>::value ...,true > >::value >
 {};
 
 }}

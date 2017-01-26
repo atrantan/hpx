@@ -1,3 +1,8 @@
+//  Copyright (c) 2016 Antoine Tran Tan
+//
+//  Distributed under the Boost Software License, Version 1.0. (See accompanying
+//  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_init.hpp>
 #include <hpx/util/high_resolution_clock.hpp>
@@ -59,7 +64,11 @@ struct spmatrix
 
 
 ///////////////////////////////////////////////////////////////////////////////
-void image_vector( spmatrix & a, std::vector<double> const & x, std::vector<double> & y, std::string filename, int test_count, int grain_factor, std::size_t rank)
+void image_vector(  spmatrix & a,
+                    std::vector<double> const & x,
+                    std::vector<double> & y,
+                    std::string filename,
+                    int test_count, int grain_factor, std::size_t rank)
 {
     int begin = a.begins_[rank];
     int chunksize = a.sizes_[rank];
@@ -71,14 +80,14 @@ void image_vector( spmatrix & a, std::vector<double> const & x, std::vector<doub
     const double * val = a.values_.data() + *row - 1;
 
     char transa('N');
-    mkl_dcsrgemv( &transa
-                , &chunksize
-                , val
-                , row
-                , idx
-                , x.data()
-                , out
-                );
+    mkl_dcsrgemv(
+        &transa,
+        &chunksize,
+        val,
+        row,
+        idx,
+        x.data(),
+        out);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -111,17 +120,19 @@ int hpx_main(boost::program_options::variables_map& vm)
     for (int iter = 0; iter != iter_end; ++iter)
     {
         hpx::parallel::for_each(
-        hpx::parallel::par.with(scs),
-        r.begin(), r.end(),
-        [&](std::size_t rank)
-        {
-            std::vector<double> y( a.chunksize_  );
+            hpx::parallel::par.with(scs),
+            r.begin(), r.end(),
+            [&](std::size_t rank)
+            {
+                std::vector<double> y( a.chunksize_ );
 
-            for(int i = 0; i<unroll_factor; i++)
-                image_vector(a, x, y, filename, test_count, grain_factor, rank);
-        });
+                for(int i = 0; i<unroll_factor; i++)
+                    image_vector(
+                        a, x, y, filename, test_count, grain_factor, rank);
+            });
     }
-    boost::uint64_t toc = ( hpx::util::high_resolution_clock::now() - start ) / test_count;
+    boost::uint64_t toc
+        = ( hpx::util::high_resolution_clock::now() - start ) / test_count;
     printf("performances : %f GFlops\n", double(size)/toc);
     printf("performances : %f GBs\n", double(datasize)/toc);
 
@@ -140,15 +151,14 @@ int main(int argc, char* argv[])
     , "filename of the matrix market (default: "")")
 
     ("test_count"
-    , boost::program_options::value<int>()->default_value(100) // for overall time of 10 ms
-    , "number of tests to be averaged (default: 100)")
+    , boost::program_options::value<int>()->default_value(100))
 
     ("grain_factor"
     , boost::program_options::value<std::size_t>()->default_value(1)
     , "number of tasks per thread (default: 10)")
 
     ("unroll_factor"
-    , boost::program_options::value<int>()->default_value(10) // for overall time of 10 ms
+    , boost::program_options::value<int>()->default_value(10)
     , "number of iterations to be merged  (default: 10)")
     ;
 

@@ -13,21 +13,35 @@
 int main()
 {
     auto a =
-    [](hpx::parallel::spmd_block block)
-    {
-        std::cout<<"Welcome in locality "<<hpx::get_locality_id()<<std::endl;
+        [](hpx::parallel::spmd_block block)
+        {
+            std::cout<<"Welcome in locality "
+                     <<hpx::get_locality_id()
+                     <<std::endl;
 
-        auto localities = block.find_all_localities();
+            auto localities = block.find_all_localities();
 
-        hpx::custom_barrier(hpx::launch::sync, hpx::detail::central, localities, "central");
-        std::cout<<"Central barrier reached by locality "<<hpx::get_locality_id()<<std::endl;
+            hpx::custom_barrier(hpx::launch::sync,
+                hpx::detail::central, localities, "central");
 
-        hpx::custom_barrier(hpx::launch::sync, hpx::detail::dissemination, localities, "dissemination");
-        std::cout<<"Dissemination barrier reached by locality "<<hpx::get_locality_id()<<std::endl;
+            std::cout<< "Central barrier reached by locality "
+                     << hpx::get_locality_id()
+                     << std::endl;
 
-        hpx::custom_barrier(hpx::launch::sync, hpx::detail::pairwise, localities, "pairwise");
-        std::cout<<"Pairwise barrier reached by locality "<<hpx::get_locality_id()<<std::endl;
-    };
+            hpx::custom_barrier(hpx::launch::sync,
+                hpx::detail::dissemination, localities, "dissemination");
+
+            std::cout<< "Dissemination barrier reached by locality "
+                     << hpx::get_locality_id()
+                     << std::endl;
+
+            hpx::custom_barrier(hpx::launch::sync,
+                hpx::detail::pairwise, localities, "pairwise");
+
+            std::cout<< "Pairwise barrier reached by locality "
+                     << hpx::get_locality_id()
+                     << std::endl;
+        };
 
     auto localities = hpx::find_all_localities();
     hpx::parallel::define_spmd_block( "block", localities, a ).get();

@@ -62,12 +62,13 @@ struct spmatrix
 };
 
 
-boost::uint64_t spmv_coarray( hpx::parallel::spmd_block & block
-                            , spmatrix const & a
-                            , std::vector<double> & x
-                            , hpx::coarray<double,1,std::vector<double>> & y
-                            , int test_count
-                            , int unroll_factor)
+boost::uint64_t spmv_coarray(
+    hpx::parallel::spmd_block & block,
+    spmatrix const & a,
+    std::vector<double> & x,
+    hpx::coarray<double,1,std::vector<double>> & y,
+    int test_count,
+    int unroll_factor)
 {
     std::vector<boost::uint64_t> time;
     std::size_t N = block.get_num_images();
@@ -97,14 +98,14 @@ boost::uint64_t spmv_coarray( hpx::parallel::spmd_block & block
         // }
 
         char transa('N');
-        mkl_dcsrgemv( &transa
-                    , &chunksize
-                    , val
-                    , row
-                    , idx
-                    , x.data()
-                    , out
-                    );
+        mkl_dcsrgemv(
+            &transa,
+            &chunksize,
+            val,
+            row,
+            idx,
+            x.data(),
+            out);
 
         if( !( (iter + 1) % unroll_factor) )
         {
@@ -127,23 +128,30 @@ int hpx_main(boost::program_options::variables_map& vm)
     }
 
     auto image_coarray =
-    []( hpx::parallel::spmd_block block, std::string filename, int test_count, int unroll_factor)
-    {
-        spmatrix a(filename);
+        []( hpx::parallel::spmd_block block,
+            std::string filename,
+            int test_count, int unroll_factor)
+        {
+            spmatrix a(filename);
 
-        hpx::coarray<double,1,std::vector<double>> y( block, "y", {_}, std::vector<double>( a.chunksize_ ) );
-        std::vector<double> x(a.n_);
+            hpx::coarray<double,1,std::vector<double>> y(
+                block, "y", {_}, std::vector<double>( a.chunksize_ ) );
 
-        std::size_t size = 2 * a.nnz_;
-        std::size_t datasize = (a.nnz_ + 2*a.m_)*sizeof(double);
+            std::vector<double> x(a.n_);
 
-        boost::uint64_t toc = spmv_coarray(block,a,x,y,test_count,unroll_factor);
-        printf("performances : %f GFlops\n", double(size)/toc);
-        printf("performances : %f GBs\n", double(datasize)/toc);
-    };
+            std::size_t size = 2 * a.nnz_;
+            std::size_t datasize = (a.nnz_ + 2*a.m_)*sizeof(double);
+
+            boost::uint64_t toc
+                = spmv_coarray(block,a,x,y,test_count,unroll_factor);
+            printf("performances : %f GFlops\n", double(size)/toc);
+            printf("performances : %f GBs\n", double(datasize)/toc);
+        };
 
     auto localities = hpx::find_all_localities();
-    hpx::parallel::define_spmd_block( "block", localities, image_coarray, filename, test_count, unroll_factor).get();
+
+    hpx::parallel::define_spmd_block( "block", localities, image_coarray,
+        filename, test_count, unroll_factor).get();
 
     return hpx::finalize();
 }
@@ -160,11 +168,11 @@ int main(int argc, char* argv[])
     , "filename of the matrix market (default: "")")
 
     ("test_count"
-    , boost::program_options::value<int>()->default_value(100) // for overall time of 10 ms
+    , boost::program_options::value<int>()->default_value(100)
     , "number of tests to be averaged (default: 100)")
 
     ("unroll_factor"
-    , boost::program_options::value<int>()->default_value(10) // for overall time of 10 ms
+    , boost::program_options::value<int>()->default_value(10)
     , "number of iterations to be merged  (default: 10)")
     ;
 

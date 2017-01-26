@@ -64,13 +64,14 @@ struct spmatrix
 };
 
 
-boost::uint64_t spmv_coarray( hpx::parallel::spmd_block & block
-                            , spmatrix const & a
-                            , std::vector<double> & x
-                            , hpx::coarray<double,1,std::vector<double>> & y
-                            , int test_count
-                            , int grain_factor
-                            , int unroll_factor)
+boost::uint64_t spmv_coarray(
+    hpx::parallel::spmd_block & block,
+    spmatrix const & a,
+    std::vector<double> & x,
+    hpx::coarray<double,1,std::vector<double>> & y,
+    int test_count,
+    int grain_factor,
+    int unroll_factor)
 {
     std::size_t N = block.get_num_images();
 
@@ -101,28 +102,28 @@ boost::uint64_t spmv_coarray( hpx::parallel::spmd_block & block
     for (int iter = 0; iter != iter_end; ++iter)
     {
         hpx::parallel::for_each(
-        hpx::parallel::par.with(scs),
-        r.begin(), r.end(),
-        [&](std::size_t i)
-        {
-            double * out = y.data(_).data() + inner_begins[i];
-            const int * row  = a.rows_.data() + begin + inner_begins[i];
-            const int * idx  = a.indices_.data() + *row - 1;
-            const double * val = a.values_.data() + *row - 1;
-
-            for (int k = 0; k != unroll_factor; ++k)
+            hpx::parallel::par.with(scs),
+            r.begin(), r.end(),
+            [&](std::size_t i)
             {
-                char transa('N');
-                mkl_dcsrgemv( &transa
-                            , &inner_sizes[i]
-                            , val
-                            , row
-                            , idx
-                            , x.data()
-                            , out
-                            );
-            }
-        });
+                double * out = y.data(_).data() + inner_begins[i];
+                const int * row  = a.rows_.data() + begin + inner_begins[i];
+                const int * idx  = a.indices_.data() + *row - 1;
+                const double * val = a.values_.data() + *row - 1;
+
+                for (int k = 0; k != unroll_factor; ++k)
+                {
+                    char transa('N');
+                    mkl_dcsrgemv(
+                    &transa,
+                    &inner_sizes[i],
+                    val,
+                    row,
+                    idx,
+                    x.data(),
+                    out);
+                }
+            });
 
         block.sync_all();
     }
@@ -144,23 +145,29 @@ int hpx_main(boost::program_options::variables_map& vm)
     }
 
     auto image_coarray =
-    []( hpx::parallel::spmd_block block, std::string filename, int test_count, std::size_t grain_factor, int unroll_factor)
+    []( hpx::parallel::spmd_block block,
+        std::string filename,
+        int test_count, std::size_t grain_factor, int unroll_factor)
     {
         spmatrix a(filename);
 
-        hpx::coarray<double,1,std::vector<double>> y( block, "y", {_}, std::vector<double>( a.chunksize_ ) );
+        hpx::coarray<double,1,std::vector<double>> y(
+            block, "y", {_}, std::vector<double>( a.chunksize_ ) );
+
         std::vector<double> x(a.n_);
 
         std::size_t size = 2 * a.nnz_;
         std::size_t datasize = (a.nnz_ + 2*a.m_)*sizeof(double);
 
-        boost::uint64_t toc = spmv_coarray(block,a,x,y,test_count,grain_factor,unroll_factor);
+        boost::uint64_t toc
+            = spmv_coarray(block,a,x,y,test_count,grain_factor,unroll_factor);
         printf("performances : %f GFlops\n", double(size)/toc);
         printf("performances : %f GBs\n", double(datasize)/toc);
     };
 
     auto localities = hpx::find_all_localities();
-    hpx::parallel::define_spmd_block( "block", localities, image_coarray, filename, test_count, grain_factor, unroll_factor).get();
+    hpx::parallel::define_spmd_block( "block", localities, image_coarray,
+        filename, test_count, grain_factor, unroll_factor).get();
 
     return hpx::finalize();
 }
@@ -177,7 +184,7 @@ int main(int argc, char* argv[])
     , "filename of the matrix market (default: "")")
 
     ("test_count"
-    , boost::program_options::value<int>()->default_value(100) // for overall time of 10 ms
+    , boost::program_options::value<int>()->default_value(100)
     , "number of tests to be averaged (default: 100)")
 
     ("grain_factor"
@@ -185,7 +192,7 @@ int main(int argc, char* argv[])
     , "number of tasks per thread (default: 10)")
 
     ("unroll_factor"
-    , boost::program_options::value<int>()->default_value(10) // for overall time of 10 ms
+    , boost::program_options::value<int>()->default_value(10)
     , "number of iterations to be merged  (default: 10)")
     ;
 

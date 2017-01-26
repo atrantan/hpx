@@ -29,7 +29,9 @@
 HPX_REGISTER_PARTITIONED_VECTOR(double,std::vector<double>);
 ///////////////////////////////////////////////////////////////////////////////
 template <typename Vector>
-boost::uint64_t transpose_matrix(Vector & out, Vector & in, std::size_t height, std::size_t width, std::size_t leading_dimension, int test_count)
+boost::uint64_t transpose_matrix(
+    Vector & out, Vector & in, std::size_t height, std::size_t width,
+        std::size_t leading_dimension, int test_count)
 {
     typedef typename Vector::value_type value_type;
 
@@ -55,16 +57,16 @@ boost::uint64_t transpose_matrix(Vector & out, Vector & in, std::size_t height, 
 
 ///////////////////////////////////////////////////////////////////////////////
 template <typename Coarray>
-boost::uint64_t transpose_coarray(  hpx::parallel::spmd_block & block
-                                 ,  Coarray & out
-                                 ,  Coarray & in
-                                 ,  std::size_t height
-                                 ,  std::size_t width
-                                 ,  std::size_t local_height
-                                 ,  std::size_t local_width
-                                 ,  std::size_t local_leading_dimension
-                                 ,  int test_count
-                                 )
+boost::uint64_t transpose_coarray(
+    hpx::parallel::spmd_block & block,
+    Coarray & out,
+    Coarray & in,
+    std::size_t height,
+    std::size_t width,
+    std::size_t local_height,
+    std::size_t local_width,
+    std::size_t local_leading_dimension,
+    int test_count)
 {
     std::vector<boost::uint64_t> time;
 
@@ -84,7 +86,6 @@ boost::uint64_t transpose_coarray(  hpx::parallel::spmd_block & block
             .then(
                 [&](hpx::future<void> f1)
                 {
-
                     f1.get();
 
                     // Inner Transpose operation
@@ -117,48 +118,53 @@ int hpx_main(boost::program_options::variables_map& vm)
     std::size_t partition_order = vm["partition_order"].as<std::size_t>();
     int test_count = vm["test_count"].as<int>();
 
-    matrix_order = (matrix_order/partition_order)*partition_order;             // Ensure that matrix_order is a multiple of partition_order
+// Ensure that matrix_order is a multiple of partition_order
+    matrix_order = (matrix_order/partition_order)*partition_order;
 
     auto image_coarray =
-    []( hpx::parallel::spmd_block block
-      , std::size_t height
-      , std::size_t width
-      , std::size_t local_height
-      , std::size_t local_width
-      , std::size_t local_leading_dimension
-      , int test_count
-      , boost::uint64_t seq_ref
-      )
-    {
-        const std::size_t partition_size = local_height*local_width;
+        []( hpx::parallel::spmd_block block,
+            std::size_t height,
+            std::size_t width,
+            std::size_t local_height,
+            std::size_t local_width,
+            std::size_t local_leading_dimension,
+            int test_count,
+            boost::uint64_t seq_ref)
+        {
+            const std::size_t partition_size = local_height*local_width;
 
-        hpx::coarray<double,2,std::vector<double>> out( block, "out", {height,width}, std::vector<double>(partition_size) );
-        hpx::coarray<double,2,std::vector<double>> in ( block, "in",  {height,width}, std::vector<double>(partition_size) );
+            hpx::coarray<double,2,std::vector<double>> out( block, "out",
+                {height,width}, std::vector<double>(partition_size) );
 
-        // hpx::cout << "hpx::coarray<double>: "
-        //     << double(seq_ref)/transpose_coarray(block, out, in, height, width, local_height, local_width, local_leading_dimension, test_count)
-        //     << "\n";
+            hpx::coarray<double,2,std::vector<double>> in ( block, "in",
+                {height,width}, std::vector<double>(partition_size) );
 
-        std::size_t size = 2*height*width*local_height*local_width*sizeof(double);
+            std::size_t size
+                = 2*height*width*local_height*local_width*sizeof(double);
 
-        hpx::cout << "performances : "
-        << double(size)/transpose_coarray(block, out, in, height, width, local_height, local_width, local_leading_dimension, test_count)
-        << " GBs\n";
-    };
+            hpx::cout << "performances : "
+            << double(size)/transpose_coarray(block, out, in, height, width,
+                    local_height, local_width, local_leading_dimension,
+                        test_count)
+            << " GBs\n";
+        };
 
     // verify that input is within domain of program
     if (test_count == 0 || test_count < 0) {
-        hpx::cout << "test_count cannot be zero or negative...\n" << hpx::flush;
+        hpx::cout << "test_count cannot be zero or negative...\n"
+                  << hpx::flush;
     }
     else if (partition_order > matrix_order) {
-        hpx::cout << "partition_order cannot be greater than matrix_order...\n" << hpx::flush;
+        hpx::cout << "partition_order cannot be greater than matrix_order...\n"
+                  << hpx::flush;
     }
     else {
         // 1) retrieve reference time
         std::vector<double> out(matrix_order*matrix_order);
         std::vector<double> in (matrix_order*matrix_order);
 
-        boost::uint64_t seq_ref = transpose_matrix( out, in, matrix_order, matrix_order, matrix_order, test_count); //-V106
+        boost::uint64_t seq_ref = transpose_matrix(
+            out, in, matrix_order, matrix_order, matrix_order, test_count);
 
         // 2) Coarray and for_each
         std::size_t height = matrix_order / partition_order;
@@ -170,9 +176,10 @@ int hpx_main(boost::program_options::variables_map& vm)
 
 
         auto localities = hpx::find_all_localities();
-        hpx::parallel::define_spmd_block( "block", localities, image_coarray
-                                        , height, width, local_height, local_width, local_leading_dimension, test_count, seq_ref
-                                        ).get();
+        hpx::parallel::define_spmd_block(
+            "block", localities, image_coarray, height, width,
+                local_height, local_width, local_leading_dimension, test_count,
+                    seq_ref).get();
     }
 
     return hpx::finalize();
@@ -194,7 +201,7 @@ int main(int argc, char* argv[])
         , "order of partition (default: 10)")
 
         ("test_count"
-        , boost::program_options::value<int>()->default_value(5) // for overall time of 10 ms
+        , boost::program_options::value<int>()->default_value(5)
         , "number of tests to be averaged (default: 5)")
         ;
 

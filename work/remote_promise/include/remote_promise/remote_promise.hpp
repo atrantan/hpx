@@ -131,7 +131,8 @@ namespace hpx { namespace detail{
 
     template<typename T>
     struct remote_promise
-    : public components::client_base< remote_promise<T>, server::remote_promise<T> >
+    : public
+        components::client_base< remote_promise<T>, server::remote_promise<T> >
     {
     private:
         typedef hpx::server::remote_promise<T> server_type;
@@ -150,7 +151,8 @@ namespace hpx { namespace detail{
         std::shared_ptr< server::remote_promise<T> > get_ptr() const
         {
             error_code ec(lightweight);
-            return hpx::get_ptr< server::remote_promise<T> >( this->get_id() ).get(ec);
+            return hpx::get_ptr< server::remote_promise<T> >(
+                this->get_id() ).get(ec);
         }
     };
 }}
@@ -168,7 +170,8 @@ namespace hpx {
         {}
 
         explicit remote_promise(hpx::id_type const & where )
-        : is_promise_here_( hpx::find_here() == where ), client_( hpx::new_<client_type>(where) )
+        : is_promise_here_( hpx::find_here() == where )
+        , client_( hpx::new_<client_type>(where) )
         {}
 
         hpx::future<T> get_future()
@@ -240,7 +243,8 @@ namespace hpx {
         {}
 
         explicit remote_promise(hpx::id_type const & where )
-        : is_promise_here_( hpx::find_here() == where ), client_( hpx::new_<client_type>(where) )
+        : is_promise_here_( hpx::find_here() == where )
+        , client_( hpx::new_<client_type>(where) )
         {}
 
         hpx::future<void> get_future()

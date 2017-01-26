@@ -23,7 +23,8 @@ namespace hpx{
         struct addr_add
         {
             template<class T>
-            friend typename std::remove_reference<T>::type *operator+(addr_add, T &&t)
+            friend typename std::remove_reference<T>::type *
+            operator+(addr_add, T &&t)
             {
                 return &t;
             }
@@ -42,12 +43,14 @@ namespace hpx{
         struct make_action_using_sequence
         {};
 
-        template<class F, typename ReturnType, template <typename...> class T, typename ... Args>
+        template<class F, typename ReturnType,
+          template <typename...> class T, typename ... Args>
         struct make_action_using_sequence< F, ReturnType, T<Args...> >
         {
-          using type = typename hpx::actions::make_action<decltype(&caller<F,ReturnType,Args...>::call)
-                                                          ,&caller<F,ReturnType,Args...>::call
-                                                          >::type;
+          using type =
+              typename hpx::actions::make_action<
+                decltype(&caller<F,ReturnType,Args...>::call),
+                &caller<F,ReturnType,Args...>::call >::type;
         };
 
         template <typename T>
@@ -76,9 +79,12 @@ namespace hpx{
         template <typename F>
         struct action_from_lambda
         {
-          using sequence = typename extract_parameters<decltype(&F::operator())>::type;
-          using return_type = typename extract_return_type<decltype(&F::operator())>::type;
-          using type = typename make_action_using_sequence<F,return_type,sequence>::type;
+          using sequence =
+              typename extract_parameters<decltype(&F::operator())>::type;
+          using return_type =
+              typename extract_return_type<decltype(&F::operator())>::type;
+          using type =
+              typename make_action_using_sequence<F,return_type,sequence>::type;
         };
 
 
@@ -87,19 +93,25 @@ namespace hpx{
         {
             constexpr typename action_from_lambda<F>::type operator += (F* f)
             {
-                static_assert( !std::is_assignable<F,F>::value && std::is_empty<F>::value
-                             ,"Lambda without capture list is required"
-                            );
+                static_assert( !std::is_assignable<F,F>::value &&
+                    std::is_empty<F>::value,
+                    "Lambda without capture list is required");
+
                 return typename action_from_lambda<F>::type();
             }
         };
     }
 
-  template<typename F>
-  constexpr auto make_action(F && f) -> decltype( hpx::detail::action_maker<F>() += true ? nullptr : hpx::detail::addr_add() + f )
-  {
-        return hpx::detail::action_maker<F>() += true ? nullptr : hpx::detail::addr_add() + f;
-  }
+    template<typename F>
+    constexpr auto make_action(F && f)
+    -> decltype(hpx::detail::action_maker<F>() += true
+        ? nullptr
+        : hpx::detail::addr_add() + f)
+    {
+        return hpx::detail::action_maker<F>() += true
+            ? nullptr
+            : detail::addr_add() + f;
+    }
 
 }
 

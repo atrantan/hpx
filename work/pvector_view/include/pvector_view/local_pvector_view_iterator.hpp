@@ -15,26 +15,26 @@ namespace hpx {
     template <typename DataType, typename BaseIter>
     class local_pvector_view_iterator
       : public boost::iterator_adaptor<
-              local_pvector_view_iterator<DataType, BaseIter>
-            , BaseIter
-            , DataType
-            , std::forward_iterator_tag
-        >
+            local_pvector_view_iterator<DataType, BaseIter>,
+            BaseIter,
+            DataType,
+            std::forward_iterator_tag>
     {
     private:
-        using base_type = boost::iterator_adaptor<
-                              local_pvector_view_iterator<DataType, BaseIter>
-                            , BaseIter
-                            , DataType
-                            , std::forward_iterator_tag
-                          >;
+        using base_type
+            = boost::iterator_adaptor<
+                local_pvector_view_iterator<DataType, BaseIter>,
+                BaseIter,
+                DataType,
+                std::forward_iterator_tag>;
 
     public:
         local_pvector_view_iterator()
         {}
 
         explicit local_pvector_view_iterator(BaseIter && it, BaseIter && end)
-        : base_type( std::forward<BaseIter>(it) ), end_( std::forward<BaseIter>(end) )
+        : base_type( std::forward<BaseIter>(it) ),
+          end_( std::forward<BaseIter>(end) )
         {
             satisfy_predicate();
         }
@@ -61,8 +61,11 @@ namespace hpx {
 
         void satisfy_predicate()
         {
-            while ( this->base_reference() != end_ && !this->base_reference()->is_data_here() )
+            while(this->base_reference() != end_ &&
+                !this->base_reference()-> is_data_here())
+            {
                 ++( this->base_reference() );
+            }
         }
 
     private:

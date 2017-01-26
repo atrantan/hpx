@@ -13,7 +13,8 @@ namespace hpx {  namespace detail {
 
     template<class RandAccessIter>
     inline
-    typename RandAccessIter::value_type median(RandAccessIter begin, RandAccessIter end)
+    typename RandAccessIter::value_type median(
+        RandAccessIter begin, RandAccessIter end)
     {
         using T = typename RandAccessIter::value_type;
 

@@ -24,9 +24,8 @@ namespace hpx {
         using value_type = T;
 
         using iterator
-        = typename hpx::local_pvector_view_iterator< Data
-                                                   , base_iterator
-                                                   >;
+            = typename
+                hpx::local_pvector_view_iterator<Data, base_iterator>;
 
         explicit local_pvector_view( base_type const & global_pview )
         : base_type(global_pview)
@@ -47,7 +46,8 @@ namespace hpx {
     };
 
     template<typename T, std::size_t N, typename Data, typename Derived>
-    local_pvector_view<T,N,Data,Derived> local_view( hpx::pvector_view<T,N,Data,Derived> const & base )
+    local_pvector_view<T,N,Data,Derived> local_view(
+        hpx::pvector_view<T,N,Data,Derived> const & base)
     {
         return local_pvector_view<T,N,Data,Derived>( base );
     }

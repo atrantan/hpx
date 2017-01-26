@@ -17,33 +17,31 @@ namespace hpx {
 
     template<typename T, std::size_t N, typename Data>
     class stencil_boundary_iterator
-    : public boost::iterator_facade
-    < stencil_boundary_iterator<T,N,Data>      // CRTP, just use the stencil_boundary_iterator name
-    , T
-    , std::random_access_iterator_tag      // type of traversal allowed
-    >
+    : public boost::iterator_facade<
+        stencil_boundary_iterator<T,N,Data>,
+        T,
+        std::random_access_iterator_tag >
     {
     private:
         using data_iterator = typename Data::iterator;
         using indices = typename hpx::detail::make_index_sequence<N>::type;
 
     template<std::size_t... I>
-    inline std::size_t  increment_solver( std::size_t dist
-                                        , hpx::detail::integer_sequence<std::size_t, I...>
-                                        ) const
+    inline std::size_t  increment_solver(
+        std::size_t dist,
+        hpx::detail::integer_sequence<std::size_t, I...>) const
     {
         std::size_t max = N-1;
         std::size_t offset = 0;
         std::size_t carry = dist;
         std::size_t tmp;
 
-  // More expensive than a usual incrementation but did not find another solution :/
+  // More expensive than a usual incrementation
         (void)std::initializer_list<int>
-        { ( static_cast<void>( carry   -= tmp = (carry/sw_basis_[max-I]) * sw_basis_[max-I]
-                             , offset  += (tmp/sw_basis_[max-I]) * hw_basis_[max-I]
-                             )
-          , 0)...
-        };
+        { ( static_cast<void>(
+                carry   -= tmp = (carry/sw_basis_[max-I]) * sw_basis_[max-I],
+                offset  += (tmp/sw_basis_[max-I]) * hw_basis_[max-I])
+          , 0 )... };
 
         return offset;
     }
@@ -110,25 +108,23 @@ namespace hpx {
 
     template<typename T, typename Data>
     class stencil_boundary_iterator<T,2,Data>
-    : public boost::iterator_facade
-    < stencil_boundary_iterator<T,2,Data>      // CRTP, just use the stencil_boundary_iterator name
-    , T
-    , std::random_access_iterator_tag      // type of traversal allowed
-    >
+    : public boost::iterator_facade<
+        stencil_boundary_iterator<T,2,Data>,
+        T,
+        std::random_access_iterator_tag >
     {
     private:
         using data_iterator = typename Data::iterator;
 
     public:
         explicit stencil_boundary_iterator(
-              data_iterator && begin
-            , std::array<std::size_t, 3> const & sw_basis
-            , std::array<std::size_t, 3> const & hw_basis
-            , std::size_t count
-            )
-        : incx_( sw_basis[1] == 1 ? hw_basis[1] : 1 )
-        , t_( begin + count*incx_ )
-        , begin_(begin)
+            data_iterator && begin,
+            std::array<std::size_t, 3> const & sw_basis,
+            std::array<std::size_t, 3> const & hw_basis,
+            std::size_t count)
+        : incx_( sw_basis[1] == 1 ? hw_basis[1] : 1 ),
+          t_( begin + count*incx_ ),
+          begin_(begin)
         {}
 
         std::size_t raw_pos() const

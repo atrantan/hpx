@@ -14,10 +14,10 @@
 namespace hpx {
 
     std::vector<hpx::naming::id_type>
-    get_unrolled_localities( std::vector< hpx::naming::id_type > const & in
-                           , std::size_t N
-                           , std::size_t unroll
-                           )
+    get_unrolled_localities(
+        std::vector< hpx::naming::id_type > const & in,
+        std::size_t N,
+        std::size_t unroll)
     {
         std::vector<hpx::naming::id_type> out ( N );
 

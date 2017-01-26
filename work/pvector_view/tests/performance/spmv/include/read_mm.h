@@ -6,9 +6,12 @@
 #include <mmio.h>
 
 void coo_to_csr(int n_row, int n_col, int nnz,
-                std::vector<int> const & Ai, std::vector<int> const & Aj, std::vector<double> const & Ax,
-                std::vector<int> & rows, std::vector<int> & indices, std::vector<double> & values
-               )
+                std::vector<int> const & Ai,
+                std::vector<int> const & Aj,
+                std::vector<double> const & Ax,
+                std::vector<int> & rows,
+                std::vector<int> & indices,
+                std::vector<double> & values)
 {
     // compute number of non-zero entries per row of A
     rows = std::vector<int>(n_row + 1);
@@ -46,7 +49,10 @@ void coo_to_csr(int n_row, int n_col, int nnz,
 }
 
 
-void read_mm(std::string const & filename, int & M, int & N, int & nnz, std::vector<int> & rows, std::vector<int> & indices, std::vector<double> & values)
+void read_mm(std::string const & filename, int & M, int & N, int & nnz,
+             std::vector<int> & rows,
+             std::vector<int> & indices,
+             std::vector<double> & values)
 {
     int ret_code;
     MM_typecode matcode;
@@ -64,7 +70,7 @@ void read_mm(std::string const & filename, int & M, int & N, int & nnz, std::vec
 
         if ( !mm_is_real(matcode) || !mm_is_sparse(matcode) )
         {
-            std::cout << "Could process only real sparse matrices." << std::endl;
+            std::cout <<"Could process only real sparse matrices."<< std::endl;
             throw 2;
         }
 
@@ -76,7 +82,7 @@ void read_mm(std::string const & filename, int & M, int & N, int & nnz, std::vec
 
     catch(int param)
     {
-        std::cout << "read_mm: caught exception: Exception No. " << param << '\n';
+        std::cout <<"read_mm: caught exception: Exception No. "<< param << '\n';
     }
 
     std::vector<int> I(nnz);

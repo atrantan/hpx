@@ -22,7 +22,8 @@ HPX_DEFINE_PLAIN_ACTION(producer);
 
 void consumer(hpx::id_type dest)
 {
-    hpx::remote_promise<int> my_promise(dest); // Create a pair component + client
+    // Create a pair component + client
+    hpx::remote_promise<int> my_promise(dest);
     my_promise.register_as("promise");
     hpx::future<int> my_future = my_promise.get_future();
 
@@ -39,8 +40,8 @@ int main()
 
     auto localities = hpx::find_all_localities();
 
-    HPX_ASSERT_MSG( localities.size() >= 2
-                  , "This unit test needs to be run with at least 2 localities");
+    HPX_ASSERT_MSG( localities.size() >= 2, \
+        "This unit test needs to be run with at least 2 localities");
 
 
     hpx::id_type orig = localities[0];

@@ -19,93 +19,135 @@
 
 #include <memory>
 
-namespace hpx { namespace parallel{
+namespace hpx {
 
-    struct spmd_block
+    namespace detail
     {
-        spmd_block(){}
+        template <typename T>
+        struct extract_first_parameter
+        {};
 
-        spmd_block( std::string name, std::vector<hpx::naming::id_type> const & localities )
-        : name_(name), localities_(localities)
-        {}
-
-        std::vector<hpx::naming::id_type> find_all_localities() const
+        // Specialization for lambdas
+        template <typename ClassType, typename ReturnType>
+        struct extract_first_parameter<ReturnType(ClassType::*)() const>
         {
-            return localities_;
-        }
+            using type = std::false_type;
+        };
 
-        std::size_t get_num_images() const
+        // Specialization for lambdas
+        template <typename ClassType,
+            typename ReturnType, typename Arg0, typename... Args>
+        struct extract_first_parameter<
+            ReturnType(ClassType::*)(Arg0, Args...) const>
         {
-            return localities_.size();
-        }
-
-        std::size_t this_image() const
-        {
-            using const_iterator = typename std::vector<hpx::naming::id_type>::const_iterator;
-
-            std::size_t rank = 0;
-            const_iterator l_it = localities_.cbegin();
-            const_iterator l_end = localities_.cend();
-            hpx::naming::id_type here = hpx::find_here();
-
-            while( *l_it != here && l_it != l_end ) { l_it++; rank++;}
-            return rank;
-        }
-
-
-        void sync_all() const
-        {
-
-           if (!barrier_)
-           {
-               barrier_ = std::make_shared<hpx::lcos::barrier>(
-                 name_ + "_barrier"
-               , localities_.size()
-               );
-           }
-
-           barrier_->wait();
-        }
-
-        hpx::future<void> sync_all(hpx::launch::async_policy const &) const
-        {
-           if (!barrier_)
-           {
-               barrier_ = std::make_shared<hpx::lcos::barrier>(
-                 name_+ "_barrier"
-               , localities_.size()
-               );
-           }
-
-           return barrier_->wait(hpx::launch::async);
-        }
-
-    private:
-        std::string name_;
-        std::vector< hpx::naming::id_type > localities_;
-        mutable std::shared_ptr<hpx::lcos::barrier> barrier_;
-
-    private:
-        friend class hpx::serialization::access;
-
-        template <typename Archive>
-        void serialize(Archive& ar, unsigned int const)
-        {
-            ar & name_ & localities_;
-        }
-    };
-
-    template <typename F, typename ... Args>
-    hpx::future<void> define_spmd_block(std::string && name, std::vector<hpx::naming::id_type> const & localities, F && f, Args && ... args)
-    {
-        constexpr auto a = hpx::make_action(std::move(f));
-        spmd_block block(name, localities);
-
-        return hpx::lcos::broadcast( a, localities, block, std::forward<Args>(args)...);
+            using type = Arg0;
+        };
     }
 
 
-}}
+    namespace parallel
+    {
+        struct spmd_block
+        {
+            spmd_block(){}
 
+            spmd_block( std::string name,
+                std::vector<hpx::naming::id_type> const & localities )
+            : name_(name), localities_(localities)
+            {}
+
+            std::vector<hpx::naming::id_type> find_all_localities() const
+            {
+                return localities_;
+            }
+
+            std::size_t get_num_images() const
+            {
+                return localities_.size();
+            }
+
+            std::size_t this_image() const
+            {
+                using const_iterator
+                    = typename
+                        std::vector<hpx::naming::id_type>::const_iterator;
+
+                std::size_t rank = 0;
+                const_iterator l_it = localities_.cbegin();
+                const_iterator l_end = localities_.cend();
+                hpx::naming::id_type here = hpx::find_here();
+
+                while( *l_it != here && l_it != l_end ) { l_it++; rank++;}
+                return rank;
+            }
+
+
+            void sync_all() const
+            {
+
+               if (!barrier_)
+               {
+                   barrier_ = std::make_shared<hpx::lcos::barrier>(
+                     name_ + "_barrier"
+                   , localities_.size()
+                   );
+               }
+
+               barrier_->wait();
+            }
+
+            hpx::future<void> sync_all(hpx::launch::async_policy const &) const
+            {
+               if (!barrier_)
+               {
+                   barrier_ = std::make_shared<hpx::lcos::barrier>(
+                     name_+ "_barrier"
+                   , localities_.size()
+                   );
+               }
+
+               return barrier_->wait(hpx::launch::async);
+            }
+
+        private:
+            std::string name_;
+            std::vector< hpx::naming::id_type > localities_;
+            mutable std::shared_ptr<hpx::lcos::barrier> barrier_;
+
+        private:
+            friend class hpx::serialization::access;
+
+            template <typename Archive>
+            void serialize(Archive& ar, unsigned int const)
+            {
+                ar & name_ & localities_;
+            }
+        };
+
+        template <typename F, typename ... Args>
+        hpx::future<void> define_spmd_block(
+            std::string && name,
+            std::vector<hpx::naming::id_type> const & localities,
+            F && f, Args && ... args)
+        {
+            using ftype = typename std::remove_reference<F>::type;
+
+            using first_type
+                = typename
+                    hpx::detail::extract_first_parameter<
+                        decltype(&ftype::operator())>::type;
+
+            static_assert( std::is_same<spmd_block,first_type>::value,
+                "**CoArray Error** : define_spmd_block() needs a lambda that " \
+                "has a spmd_block as 1st argument");
+
+            constexpr auto a = hpx::make_action(std::move(f));
+            spmd_block block(name, localities);
+
+            return hpx::lcos::broadcast(
+                a, localities, block, std::forward<Args>(args)...);
+        }
+    }
+}
 
 #endif

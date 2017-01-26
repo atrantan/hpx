@@ -25,33 +25,42 @@ namespace hpx { namespace detail {
     struct view_element_boundary
     : public hpx::partitioned_vector_partition<T,Data>
     {
-        using segment_iterator = typename hpx::vector_iterator<T,Data>::segment_iterator;
+        using segment_iterator
+            = typename hpx::vector_iterator<T,Data>::segment_iterator;
         using boundary_type = typename Stencil::boundary_type;
 
     public:
         template<typename ... I>
-        explicit view_element_boundary(  segment_iterator && it
-                                        , Stencil const & stencil
-                                        , I ... i
-                                        )
+        explicit view_element_boundary(
+            segment_iterator && it, Stencil const & stencil, I ... i)
         : hpx::partitioned_vector_partition<T,Data>( it->get_id() )
-        , is_data_here_( hpx::get_locality_id() == hpx::naming::get_locality_id_from_id(it->get_id()) )
+        , is_data_here_(
+            hpx::get_locality_id() ==
+                hpx::naming::get_locality_id_from_id(it->get_id()))
         {
-           Data dummy_vector( stencil.get_minimum_vector_size() );     // To avoid assertion failure
+           // To avoid assertion failure
+           Data dummy_vector( stencil.get_minimum_vector_size() );
 
-           auto begin = is_data_here_ ? this->get_ptr()->get_data().begin() : dummy_vector.begin();
-           auto end   = is_data_here_ ? this->get_ptr()->get_data().end()   : dummy_vector.end();
+            auto begin
+                = is_data_here_
+                    ? this->get_ptr()->get_data().begin()
+                    : dummy_vector.begin();
+            auto end
+                = is_data_here_
+                    ? this->get_ptr()->get_data().end()
+                    : dummy_vector.end();
 
            boundary_ = stencil.get_boundary(begin,end,int(i)...);
         }
 
     // Not copyable
         view_element_boundary(view_element_boundary const &) = delete;
-        view_element_boundary& operator=(view_element_boundary const &) = delete;
+
+        view_element_boundary&
+        operator=(view_element_boundary const &) = delete;
 
     // But movable
         view_element_boundary(view_element_boundary && other) = default;
-
 
         bool is_data_here() const
         {
